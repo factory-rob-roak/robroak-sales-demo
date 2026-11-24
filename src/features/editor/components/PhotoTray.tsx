@@ -1,4 +1,4 @@
-import { useId, type KeyboardEvent } from 'react';
+import { useId, useRef, type KeyboardEvent } from 'react';
 import type { BookDraft, EditorAction } from '../types';
 import type { PhotoUploadFailure } from '../usePhotoUpload';
 import { AddPhotosButton } from './AddPhotosButton';
@@ -32,6 +32,7 @@ export function PhotoTray({
   uploads,
 }: PhotoTrayProps) {
   const headingId = useId();
+  const addPhotosRef = useRef<HTMLInputElement>(null);
   // Matches autoFill: a photo counts as used while any slot entry holds it, even one hidden by the layout.
   const usedIds = new Set(draft.spreads.flatMap((spread) => spread.slots));
   const selectedPhoto = draft.photos.find((photo) => photo.id === selectedPhotoId) ?? null;
@@ -46,11 +47,12 @@ export function PhotoTray({
       <h2 id={headingId} className={styles.heading}>
         Photos ({draft.photos.length})
       </h2>
-      <AddPhotosButton onFiles={uploads.onAddFiles} />
+      <AddPhotosButton onFiles={uploads.onAddFiles} inputRef={addPhotosRef} />
       <UploadStatus
         inProgressCount={uploads.inProgressCount}
         errors={uploads.errors}
         onDismissError={uploads.onDismissError}
+        returnFocusRef={addPhotosRef}
       />
       <button
         type="button"

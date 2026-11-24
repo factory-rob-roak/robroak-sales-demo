@@ -88,6 +88,23 @@ describe('PhotoTray uploads', () => {
     expect(screen.queryByRole('list', { name: 'Upload problems' })).not.toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'Photos (0)' })).toBeInTheDocument();
   });
+
+  it('keeps keyboard focus in the tray as upload problems are dismissed', async () => {
+    renderTray();
+    const notes = new File(['x'], 'notes.txt', { type: 'text/plain' });
+    const todo = new File(['x'], 'todo.txt', { type: 'text/plain' });
+    await userEvent.upload(screen.getByLabelText('Add photos'), [notes, todo], { applyAccept: false });
+    const problems = await screen.findByRole('list', { name: 'Upload problems' });
+    await waitFor(() => expect(within(problems).getAllByRole('button')).toHaveLength(2));
+
+    within(problems).getByRole('button', { name: /^Dismiss: notes\.txt/ }).focus();
+    await userEvent.keyboard('{Enter}');
+    expect(screen.getByRole('button', { name: /^Dismiss: todo\.txt/ })).toHaveFocus();
+
+    await userEvent.keyboard('{Enter}');
+    expect(screen.queryByRole('list', { name: 'Upload problems' })).not.toBeInTheDocument();
+    expect(screen.getByLabelText('Add photos')).toHaveFocus();
+  });
 });
 
 describe('altFromFileName', () => {
