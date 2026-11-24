@@ -8,6 +8,11 @@ output "cloudfront_distribution_id" {
   value       = aws_cloudfront_distribution.site.id
 }
 
+output "deploy_role_arn" {
+  description = "Role GitHub Actions assumes. Set as the AWS_DEPLOY_ROLE_ARN repository variable."
+  value       = aws_iam_role.deploy.arn
+}
+
 output "site_url" {
   description = "Public HTTPS URL of the site."
   value       = "https://${aws_cloudfront_distribution.site.domain_name}"

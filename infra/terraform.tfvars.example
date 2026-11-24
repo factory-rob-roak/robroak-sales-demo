@@ -1,4 +1,6 @@
 # Copy to terraform.tfvars (git-ignored) and adjust. Every value has a default.
-aws_region        = "us-east-1"
-project_name      = "photo-books"
-github_repository = "factory-rob-roak/robroak-sales-demo"
+aws_region                  = "us-east-1"
+project_name                = "photo-books"
+github_repository           = "factory-rob-roak/robroak-sales-demo"
+github_environment          = "production"
+create_github_oidc_provider = true

@@ -27,6 +27,18 @@ variable "github_repository" {
   default     = "factory-rob-roak/robroak-sales-demo"
 }
 
+variable "github_environment" {
+  description = "GitHub Actions environment the deploy job runs in. Only that environment can assume the deploy role."
+  type        = string
+  default     = "production"
+}
+
+variable "create_github_oidc_provider" {
+  description = "Create the GitHub OIDC identity provider. Set to false if the AWS account already has one for token.actions.githubusercontent.com."
+  type        = bool
+  default     = true
+}
+
 variable "price_class" {
   description = "CloudFront price class."
   type        = string
