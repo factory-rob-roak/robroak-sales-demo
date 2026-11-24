@@ -33,8 +33,14 @@ function Harness({ draft = makeDraft(), onReAddPhoto = vi.fn() }) {
         dispatch={dispatch}
         selectedPhotoId={selectedPhotoId}
         onSelectPhoto={setSelectedPhotoId}
-        onReAddPhoto={onReAddPhoto}
-        uploads={{ onAddFiles: vi.fn(), inProgressCount: 0, errors: [], onDismissError: vi.fn() }}
+        uploads={{
+          onAddFiles: vi.fn(),
+          inProgressCount: 0,
+          errors: [],
+          onDismissError: vi.fn(),
+          reAddPhoto: onReAddPhoto,
+          reAddInput: { ref: { current: null }, onChange: vi.fn() },
+        }}
       />
       <PageCanvas
         draft={state}
@@ -89,6 +95,18 @@ describe('PhotoTray', () => {
     await user.click(dog);
     await user.keyboard('{Escape}');
     expect(dog).toHaveAttribute('aria-pressed', 'false');
+  });
+
+  it('edits the alt text of the selected photo', async () => {
+    const user = userEvent.setup();
+    render(<Harness />);
+    await user.click(library().getByRole('button', { name: 'Dog in the waves' }));
+    const input = screen.getByRole('textbox', { name: 'Description of dog.jpg' });
+    await user.clear(input);
+    await user.type(input, 'Max at the beach');
+    expect(library().getByRole('img', { name: 'Max at the beach' })).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Clear selection' }));
+    expect(screen.queryByRole('textbox', { name: /Description/ })).not.toBeInTheDocument();
   });
 
   it('starts a native drag with the photo id', () => {

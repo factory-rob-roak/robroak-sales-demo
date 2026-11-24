@@ -1,0 +1,42 @@
+.details {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 0.75rem;
+  border-radius: 8px;
+  background: #f4f1ec;
+}
+
+.label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  overflow-wrap: anywhere;
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.input,
+.clear {
+  min-height: 44px;
+  border: 1px solid #b9b3a8;
+  border-radius: 6px;
+  font: inherit;
+  font-weight: 400;
+}
+
+.input {
+  padding: 0 0.5rem;
+}
+
+.clear {
+  padding: 0 0.75rem;
+  background: #fff;
+  cursor: pointer;
+}
+
+.input:focus-visible,
+.clear:focus-visible {
+  outline: 3px solid #1d5fbf;
+  outline-offset: 2px;
+}
