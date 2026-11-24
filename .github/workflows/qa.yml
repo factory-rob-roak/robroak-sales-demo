@@ -1,0 +1,371 @@
+name: QA
+
+# Informational check: it never blocks merging. Do not add it to branch protection.
+# Runs droid with the repo's QA skill (.factory/skills/qa) against the app built from
+# the PR's own code, uploads an artifact, and keeps one sticky QA comment per PR.
+"on":
+  # Every PR, drafts included, whatever the base branch: this repo stacks PRs.
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+  workflow_dispatch:
+    inputs:
+      pr_number:
+        description: PR number to QA (updates its QA comment). Leave empty to QA the selected branch.
+        required: false
+        default: ""
+      base_ref:
+        description: Base branch to diff against when no PR number is given.
+        required: false
+        default: main
+
+permissions:
+  contents: read
+
+concurrency:
+  group: qa-${{ github.event.pull_request.number || inputs.pr_number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  qa:
+    name: QA (informational)
+    # Fork PRs get no secrets, so they are skipped rather than failed.
+    if: github.event_name == 'workflow_dispatch' || github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 40 # setup + up to ci_checks.wait_minutes + the 20-minute QA step
+    # This job runs the agent, so it gets no write access and no evidence token.
+    permissions:
+      contents: read
+      checks: read
+      pull-requests: read
+    outputs:
+      number: ${{ steps.pr.outputs.number }}
+      workflow_sha: ${{ github.sha }}
+      artifact_name: ${{ steps.names.outputs.artifact }}
+      artifact_url: ${{ steps.artifact.outputs.artifact-url }}
+      max_upload_mb: ${{ steps.config.outputs.max_upload_mb }}
+    env:
+      RUN_ID: ${{ github.run_id }}-${{ github.run_attempt }}
+      QA_BASE_URL: http://127.0.0.1:4173
+    steps:
+      - name: Resolve PR context
+        id: pr
+        env:
+          GH_TOKEN: ${{ github.token }}
+          EVENT_NAME: ${{ github.event_name }}
+          EVENT_PR_NUMBER: ${{ github.event.pull_request.number }}
+          EVENT_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          EVENT_BASE_REF: ${{ github.event.pull_request.base.ref }}
+          INPUT_PR_NUMBER: ${{ inputs.pr_number }}
+          INPUT_BASE_REF: ${{ inputs.base_ref }}
+        run: |
+          set -euo pipefail
+          if [ "$EVENT_NAME" = "pull_request" ]; then
+            number="$EVENT_PR_NUMBER"; head_sha="$EVENT_HEAD_SHA"; base_ref="$EVENT_BASE_REF"
+            checkout_ref=""   # default: the PR merge commit, which also holds this workflow and the QA skill
+          elif [ -n "$INPUT_PR_NUMBER" ]; then
+            case "$INPUT_PR_NUMBER" in *[!0-9]*) echo "pr_number must be a number" >&2; exit 1;; esac
+            number="$INPUT_PR_NUMBER"
+            pr_json="$(gh api "repos/$GITHUB_REPOSITORY/pulls/$number")"
+            head_sha="$(jq -r .head.sha <<< "$pr_json")"
+            base_ref="$(jq -r .base.ref <<< "$pr_json")"
+            checkout_ref="refs/pull/$number/merge"
+          else
+            number=""; head_sha="$GITHUB_SHA"; base_ref="${INPUT_BASE_REF:-main}"; checkout_ref=""
+          fi
+          {
+            echo "number=$number"
+            echo "head_sha=$head_sha"
+            echo "base_ref=$base_ref"
+            echo "checkout_ref=$checkout_ref"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ steps.pr.outputs.checkout_ref }}
+          fetch-depth: 0 # full history and all branches, for the diff against the base branch
+          persist-credentials: false # keep the token out of .git/config, where the agent could read it
+
+      - name: Use the QA skill from this workflow's commit
+        # A dispatched PR whose stack predates the QA setup has no skill files of its own.
+        run: |
+          set -euo pipefail
+          if [ ! -f .factory/skills/qa/SKILL.md ]; then
+            git checkout "$GITHUB_SHA" -- .factory
+            echo "::notice::Using the QA skill from ${GITHUB_SHA:0:7}; the code under test does not contain it."
+          fi
+
+      - name: Resolve diff base
+        id: diff
+        env:
+          BASE_REF: ${{ steps.pr.outputs.base_ref }}
+        run: |
+          set -euo pipefail
+          if git rev-parse --verify --quiet "refs/remotes/origin/$BASE_REF" > /dev/null; then
+            echo "base=origin/$BASE_REF" >> "$GITHUB_OUTPUT"
+          else
+            echo "::warning::Base branch $BASE_REF not found; diffing against the merge commit's first parent."
+            echo "base=HEAD^1" >> "$GITHUB_OUTPUT"
+          fi
+          mkdir -p "qa-results/$RUN_ID"
+
+      - name: Read QA config
+        id: config
+        run: |
+          set -euo pipefail
+          cfg=.factory/skills/qa/config.yaml
+          {
+            echo "imagemagick=$(yq '.imagemagick // false' "$cfg")"
+            echo "video_evidence=$(yq '.video_evidence // false' "$cfg")"
+            echo "compose=$(yq '.droid_control.compose // false' "$cfg")"
+            echo "wait_minutes=$(yq '.ci_checks.wait_minutes // 8' "$cfg")"
+            echo "max_upload_mb=$(yq '.evidence.max_upload_mb // 10' "$cfg")"
+            echo "ignore_json=$(yq -o=json -I=0 '.ci_checks.ignore // []' "$cfg")"
+          } >> "$GITHUB_OUTPUT"
+          cat "$GITHUB_OUTPUT"
+
+      - name: Name the artifact
+        id: names
+        env:
+          NUMBER: ${{ steps.pr.outputs.number }}
+        run: |
+          label="${NUMBER:+pr-$NUMBER}"
+          label="${label:-$(tr -c 'A-Za-z0-9._\n-' '-' <<< "$GITHUB_REF_NAME")}"
+          echo "artifact=qa-results-$label-run-$RUN_ID" >> "$GITHUB_OUTPUT"
+
+      - name: Install system packages
+        env:
+          IMAGEMAGICK: ${{ steps.config.outputs.imagemagick }}
+          VIDEO_EVIDENCE: ${{ steps.config.outputs.video_evidence }}
+          COMPOSE: ${{ steps.config.outputs.compose }}
+        run: |
+          set -euo pipefail
+          pkgs=""
+          if [ "$IMAGEMAGICK" = "true" ]; then pkgs="$pkgs imagemagick"; fi
+          # agent-browser needs ffmpeg to finalize .webm recordings; without it they are silently lost.
+          if [ "$VIDEO_EVIDENCE" = "true" ] || [ "$COMPOSE" = "true" ]; then pkgs="$pkgs ffmpeg"; fi
+          if [ -n "$pkgs" ]; then
+            sudo apt-get update -qq
+            # shellcheck disable=SC2086
+            sudo apt-get install -y -qq $pkgs
+          fi
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        id: build
+        continue-on-error: true # the QA report says BLOCKED instead of the job failing
+        run: npm run build
+
+      - name: Start preview server
+        id: preview
+        if: steps.build.outcome == 'success'
+        continue-on-error: true
+        run: |
+          nohup npx vite preview --host 127.0.0.1 --port 4173 --strictPort > qa-results/preview-server.log 2>&1 &
+          for _ in $(seq 1 60); do
+            if curl -sf "$QA_BASE_URL/" > /dev/null; then echo "ready=true" >> "$GITHUB_OUTPUT"; exit 0; fi
+            sleep 1
+          done
+          echo "::warning::Preview server did not answer on $QA_BASE_URL"
+          cat qa-results/preview-server.log
+          exit 1
+
+      - name: Generate test photos
+        if: steps.config.outputs.imagemagick == 'true'
+        run: |
+          set -euo pipefail
+          dir="$RUNNER_TEMP/qa-photos"
+          mkdir -p "$dir"
+          for c in red green blue orange; do
+            convert -size 320x240 "xc:$c" -gravity center -pointsize 48 -fill white -annotate 0 "$c" "$dir/qa-$c.png"
+          done
+          echo "not an image" > "$dir/qa-not-an-image.txt"
+          echo "QA_PHOTO_DIR=$dir" >> "$GITHUB_ENV"
+
+      - name: Install Factory Droid and browser tooling
+        env:
+          FACTORY_API_KEY: ${{ secrets.FACTORY_API_KEY }}
+        run: |
+          set -euo pipefail
+          # The third-party installer runs without secrets in its environment.
+          curl --retry 5 --retry-delay 2 --retry-all-errors -fsSL https://app.factory.ai/cli | env -u FACTORY_API_KEY sh
+          export PATH="$HOME/.local/bin:$HOME/.factory/bin:$PATH"
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+          echo "$HOME/.factory/bin" >> "$GITHUB_PATH"
+          # .factory/settings.json declares droid-control; install it explicitly so a failure shows here.
+          droid plugin marketplace add https://github.com/Factory-AI/factory-plugins || true
+          droid plugin install droid-control@factory-plugins --scope project || true
+          droid plugin list --scope project || true
+          git checkout -- .factory/settings.json 2> /dev/null || true
+          if ! command -v agent-browser > /dev/null; then npm install -g agent-browser@0.44.0; fi
+          agent-browser --version
+          agent-browser doctor --offline --quick || agent-browser install --with-deps
+
+      - name: Record checks on the head commit
+        env:
+          GH_TOKEN: ${{ github.token }}
+          HEAD_SHA: ${{ steps.pr.outputs.head_sha }}
+          WAIT_MINUTES: ${{ steps.config.outputs.wait_minutes }}
+          IGNORE_JSON: ${{ steps.config.outputs.ignore_json }}
+        run: |
+          set -uo pipefail
+          out=qa-results/ci-checks.md
+          deadline=$(( $(date +%s) + WAIT_MINUTES * 60 ))
+          while :; do
+            if ! runs="$(gh api --paginate "repos/$GITHUB_REPOSITORY/commits/$HEAD_SHA/check-runs?per_page=100" \
+                  --jq '.check_runs[] | {name, status, conclusion, html_url}' | jq -s .)"; then
+              echo "Could not read check runs for \`${HEAD_SHA:0:7}\` from the GitHub checks API." > "$out"
+              exit 0
+            fi
+            pending="$(jq --argjson ignore "$IGNORE_JSON" \
+              '[.[] | select(.status != "completed" and ((.name as $n | $ignore | index($n)) | not))] | length' <<< "$runs")"
+            if [ "$pending" = "0" ] || [ "$(date +%s)" -ge "$deadline" ]; then break; fi
+            echo "Waiting for $pending check(s) on ${HEAD_SHA:0:7}..."
+            sleep 20
+          done
+          {
+            echo "| Check | Result |"
+            echo "| --- | --- |"
+            jq -r --argjson ignore "$IGNORE_JSON" '
+              map(select((.name as $n | $ignore | index($n)) | not))
+              | unique_by(.name)[]
+              | "| [\(.name)](\(.html_url)) | " +
+                (if .status != "completed" then ":hourglass: still running"
+                 elif .conclusion == "success" then ":white_check_mark: success"
+                 elif .conclusion == "skipped" or .conclusion == "neutral" then ":fast_forward: \(.conclusion)"
+                 else ":x: \(.conclusion)" end) + " |"' <<< "$runs"
+          } > "$out"
+          if [ "$(wc -l < "$out")" -le 2 ]; then echo "No other checks ran on \`${HEAD_SHA:0:7}\`." > "$out"; fi
+          cat "$out"
+
+      - name: Run QA
+        id: qa
+        continue-on-error: true
+        timeout-minutes: 20
+        env:
+          CI: "true"
+          FACTORY_API_KEY: ${{ secrets.FACTORY_API_KEY }}
+          QA_DIFF_BASE: ${{ steps.diff.outputs.base }}
+          QA_HEAD_SHA: ${{ steps.pr.outputs.head_sha }}
+          QA_PR_NUMBER: ${{ steps.pr.outputs.number }}
+          QA_BUILD_OUTCOME: ${{ steps.build.outcome }}
+          QA_PREVIEW_READY: ${{ steps.preview.outputs.ready == 'true' }}
+          VIDEO_EVIDENCE: ${{ steps.config.outputs.video_evidence }}
+          COMPOSE: ${{ steps.config.outputs.compose }}
+        run: |
+          set -o pipefail
+          prompt="You are running in a non-interactive CI environment. There is NO human available.
+          Do NOT use AskUser, do NOT wait for confirmations, do NOT pause for input.
+          Run the qa skill (.factory/skills/qa/SKILL.md). The diff base is ${QA_DIFF_BASE}; the app built from this commit is served at ${QA_BASE_URL}.
+          The checks that ran on ${QA_HEAD_SHA} are in qa-results/ci-checks.md.
+          Use droid-control for every browser interaction and save evidence under qa-results/${RUN_ID}/.
+          Reference evidence only with [[evidence:...]] placeholders; a later workflow job uploads and embeds it.
+          Write the final report to qa-results/report.md."
+          if [ "$VIDEO_EVIDENCE" = "true" ]; then
+            prompt="$prompt
+          Record each UI flow with droid-control Capture as described in the qa skill's Evidence Capture rules."
+          fi
+          if [ "$VIDEO_EVIDENCE" = "true" ] && [ "$COMPOSE" = "true" ]; then
+            prompt="$prompt
+          Run droid-control Compose for each captured flow."
+          fi
+          droid exec --auto high "$prompt" 2>&1 | tee qa-output.txt
+
+      - name: Redact secrets from QA output
+        # Artifacts and PR comments are not masked like logs are.
+        if: always()
+        env:
+          FACTORY_API_KEY: ${{ secrets.FACTORY_API_KEY }}
+        run: |
+          python3 - <<'PY'
+          import os
+          from pathlib import Path
+
+          secret = os.environ.get("FACTORY_API_KEY", "")
+          paths = [Path("qa-output.txt"), *Path("qa-results").rglob("*")]
+          for path in paths:
+              if not secret or not path.is_file() or path.suffix.lower() in {".png", ".gif", ".webm", ".mp4", ".jpg", ".jpeg"}:
+                  continue
+              try:
+                  text = path.read_text(encoding="utf-8")
+              except (OSError, UnicodeDecodeError):
+                  continue
+              if secret in text:
+                  path.write_text(text.replace(secret, "***"), encoding="utf-8")
+                  print(f"Redacted a secret from {path}")
+          PY
+
+      - name: Upload QA artifact
+        id: artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ steps.names.outputs.artifact }}
+          path: |
+            qa-results/
+            qa-output.txt
+          retention-days: 14
+          if-no-files-found: warn
+
+  report:
+    name: QA report
+    needs: qa
+    if: ${{ !cancelled() && needs.qa.result != 'skipped' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - name: Checkout workflow scripts
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.qa.outputs.workflow_sha || github.sha }}
+          sparse-checkout: .github/scripts
+          persist-credentials: false
+
+      - name: Download QA artifact
+        if: needs.qa.outputs.artifact_name != ''
+        continue-on-error: true
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ needs.qa.outputs.artifact_name }}
+          path: qa-artifact
+
+      # QA_EVIDENCE_TOKEN is reachable by anyone who can push a branch here (pull_request
+      # runs the PR's own workflow), so mint it on a machine user with access to this repo only.
+      - name: Embed evidence in the report
+        env:
+          QA_EVIDENCE_TOKEN: ${{ secrets.QA_EVIDENCE_TOKEN }}
+          REPO_ID: ${{ github.event.repository.id }}
+          ARTIFACT_URL: ${{ needs.qa.outputs.artifact_url }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          MAX_UPLOAD_MB: ${{ needs.qa.outputs.max_upload_mb }}
+        run: python3 .github/scripts/qa_embed_evidence.py qa-artifact/qa-results/report.md comment-body.md qa-artifact/qa-results
+
+      - name: Post QA report as PR comment
+        if: needs.qa.outputs.number != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ needs.qa.outputs.number }}
+        run: |
+          set -euo pipefail
+          existing="$(gh api --paginate "repos/$GITHUB_REPOSITORY/issues/$PR_NUMBER/comments?per_page=100" \
+            --jq '.[] | select(.user.login == "github-actions[bot]" and (.body | startswith("<!-- qa-report -->"))) | .id' | head -n 1)"
+          if [ -n "$existing" ]; then
+            gh api --method PATCH "repos/$GITHUB_REPOSITORY/issues/comments/$existing" -F body=@comment-body.md > /dev/null
+            echo "Updated QA comment $existing"
+          else
+            gh api --method POST "repos/$GITHUB_REPOSITORY/issues/$PR_NUMBER/comments" -F body=@comment-body.md > /dev/null
+            echo "Created QA comment"
+          fi
+
+      - name: Write job summary
+        run: cat comment-body.md >> "$GITHUB_STEP_SUMMARY"

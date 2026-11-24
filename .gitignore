@@ -5,3 +5,6 @@ coverage
 *.log
 .env
 .env.*
+qa-results
+qa-output.txt
+__pycache__

@@ -1,0 +1,34 @@
+# Answers to the /install-qa questionnaire. Supplied by the human through the
+# workstream orchestrator on 2026-11-24 (no interactive questionnaire was run).
+categories_completed: [default_target, personas, critical_flows, external_services, cleanup, imagemagick, ci_integration, failure_learning]
+default_target:
+  target: local app built and served from the PR's checked-out code (npm ci, npm run build, npx vite preview; poll localhost)
+  restrictions: [no preview deployments, never a remote environment]
+apps:
+  web: {path: 'src/**', test_tool: agent-browser via droid-control}
+personas:
+  auth: none
+  roles: [customer making a photo book]
+critical_flows:
+  - open a project from the project list
+  - add photos to the tray (in-memory upload stub, small generated image files)
+  - place a photo by drag-and-drop and by keyboard (select a photo, then activate a slot)
+  - change layouts; photos survive switching to a smaller layout and back
+  - add a caption
+  - price updates as spreads are added (prices from src/lib/pricing.ts)
+external_services: none (upload API is an in-memory stub)
+cleanup: none (browser-local drafts only)
+imagemagick: true
+ci_integration:
+  provider: github-actions
+  workflow: .github/workflows/qa.yml
+  triggers: pull_request [opened, synchronize, reopened, ready_for_review] on every base branch, drafts included; workflow_dispatch
+  required: false # informational check
+  auth_secret: FACTORY_API_KEY
+  diff_base: github.event.pull_request.base.ref (stacked PRs)
+  comment: one sticky comment per PR with <!-- qa-report --> marker, plus an artifact
+  video_evidence: true # changed by the human: screenshots and GIF inline via QA_EVIDENCE_TOKEN
+  compose: false
+  no_ui_change: list the checks that ran on the head SHA (GitHub checks API) instead of a bare INCONCLUSIVE
+  unreachable_ui: BLOCKED with the reason, screenshot what is reachable, list the checks
+failure_learning: suggest_in_report
