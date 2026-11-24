@@ -23,7 +23,7 @@ export function EditorToolbar({ title, canUndo, canRedo, saveStatus, onUndo, onR
       <button type="button" className={styles.button} onClick={onClose}>
         <span aria-hidden="true">←</span> Back to projects
       </button>
-      <h1 className={styles.title}>{title.trim() || 'Untitled book'}</h1>
+      <h1 className={styles.title} tabIndex={-1}>{title.trim() || 'Untitled book'}</h1>
       <div className={styles.history} role="group" aria-label="History">
         <button
           type="button"
