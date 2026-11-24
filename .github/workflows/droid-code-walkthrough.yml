@@ -13,7 +13,8 @@ concurrency:
   cancel-in-progress: true
 jobs:
   code-walkthrough:
-    if: github.event.pull_request.draft == false && github.event.pull_request.head.repo.full_name == github.repository
+    # Drafts are included on purpose: every push to a draft PR also gets a walkthrough.
+    if: github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
