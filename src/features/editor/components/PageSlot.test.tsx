@@ -1,5 +1,6 @@
 import { fireEvent, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { useState } from 'react';
 import { describe, expect, it, vi } from 'vitest';
 import type { Photo } from '../types';
 import { PageSlot } from './PageSlot';
@@ -65,6 +66,28 @@ describe('PageSlot', () => {
     const { onRemove } = renderSlot({ photo: beach });
     await userEvent.click(screen.getByRole('button', { name: 'Remove photo from slot 2' }));
     expect(onRemove).toHaveBeenCalled();
+  });
+
+  it('keeps keyboard focus on the slot after its photo is removed', async () => {
+    function FilledSlot() {
+      const [photo, setPhoto] = useState<Photo | null>(beach);
+      return (
+        <PageSlot
+          index={1}
+          photo={photo}
+          selectedPhoto={null}
+          hintId="hint"
+          onPlace={vi.fn()}
+          onRemove={() => setPhoto(null)}
+          onReAdd={vi.fn()}
+        />
+      );
+    }
+    render(<FilledSlot />);
+    screen.getByRole('button', { name: 'Remove photo from slot 2' }).focus();
+    await userEvent.keyboard('{Enter}');
+    expect(screen.queryByRole('button', { name: 'Remove photo from slot 2' })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Slot 2: empty' })).toHaveFocus();
   });
 
   it('shows a re-add placeholder for a missing photo', async () => {

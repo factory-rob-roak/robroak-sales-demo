@@ -1,4 +1,4 @@
-import { useState, type DragEvent } from 'react';
+import { useRef, useState, type DragEvent } from 'react';
 import type { Photo } from '../types';
 import { cx } from './classNames';
 import styles from './PageSlot.module.css';
@@ -23,6 +23,7 @@ function describe(photo: Photo | null): string {
 
 export function PageSlot({ index, photo, selectedPhoto, hintId, onPlace, onRemove, onReAdd }: PageSlotProps) {
   const [dragOver, setDragOver] = useState(false);
+  const targetRef = useRef<HTMLButtonElement>(null);
   const number = index + 1;
   const label = selectedPhoto
     ? `Place ${describe(selectedPhoto)} in slot ${number}`
@@ -57,6 +58,7 @@ export function PageSlot({ index, photo, selectedPhoto, hintId, onPlace, onRemov
       onDrop={handleDrop}
     >
       <button
+        ref={targetRef}
         type="button"
         className={styles.target}
         aria-label={label}
@@ -87,7 +89,11 @@ export function PageSlot({ index, photo, selectedPhoto, hintId, onPlace, onRemov
           type="button"
           className={styles.remove}
           aria-label={`Remove photo from slot ${number}`}
-          onClick={onRemove}
+          onClick={() => {
+            onRemove();
+            // The remove button unmounts with the photo, so keep keyboard focus on the emptied slot.
+            targetRef.current?.focus();
+          }}
         >
           <span aria-hidden="true">×</span>
         </button>
