@@ -1,0 +1,7 @@
+# Copy to backend.hcl (git-ignored), fill in, then run:
+#   terraform init -backend-config=backend.hcl
+bucket       = "REPLACE-ME-terraform-state"
+key          = "photo-books/site.tfstate"
+region       = "us-east-1"
+encrypt      = true
+use_lockfile = true
