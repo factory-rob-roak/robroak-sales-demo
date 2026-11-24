@@ -1,36 +1,22 @@
 import { useId, useRef, type KeyboardEvent } from 'react';
 import type { BookDraft, EditorAction } from '../types';
-import type { PhotoUploadFailure } from '../usePhotoUpload';
 import { AddPhotosButton } from './AddPhotosButton';
 import styles from './PhotoTray.module.css';
+import { SelectedPhotoDetails } from './SelectedPhotoDetails';
 import shared from './shared.module.css';
 import { TrayPhoto } from './TrayPhoto';
 import { UploadStatus } from './UploadStatus';
-
-export interface TrayUploads {
-  onAddFiles: (files: File[]) => void;
-  inProgressCount: number;
-  errors: readonly PhotoUploadFailure[];
-  onDismissError: (id: string) => void;
-}
+import type { TrayUploads } from './useTrayUploads';
 
 interface PhotoTrayProps {
   draft: BookDraft;
   dispatch: (action: EditorAction) => void;
   selectedPhotoId: string | null;
   onSelectPhoto: (photoId: string | null) => void;
-  onReAddPhoto: (photoId: string) => void;
   uploads: TrayUploads;
 }
 
-export function PhotoTray({
-  draft,
-  dispatch,
-  selectedPhotoId,
-  onSelectPhoto,
-  onReAddPhoto,
-  uploads,
-}: PhotoTrayProps) {
+export function PhotoTray({ draft, dispatch, selectedPhotoId, onSelectPhoto, uploads }: PhotoTrayProps) {
   const headingId = useId();
   const addPhotosRef = useRef<HTMLInputElement>(null);
   // Matches autoFill: a photo counts as used while any slot entry holds it, even one hidden by the layout.
@@ -48,6 +34,16 @@ export function PhotoTray({
         Photos ({draft.photos.length})
       </h2>
       <AddPhotosButton onFiles={uploads.onAddFiles} inputRef={addPhotosRef} />
+      <input
+        ref={uploads.reAddInput.ref}
+        type="file"
+        className={shared.visuallyHidden}
+        accept="image/*"
+        tabIndex={-1}
+        aria-hidden="true"
+        aria-label="Replacement photo"
+        onChange={uploads.reAddInput.onChange}
+      />
       <UploadStatus
         inProgressCount={uploads.inProgressCount}
         errors={uploads.errors}
@@ -75,10 +71,17 @@ export function PhotoTray({
               used={usedIds.has(photo.id)}
               selected={photo.id === selectedPhotoId}
               onToggle={() => onSelectPhoto(photo.id === selectedPhotoId ? null : photo.id)}
-              onReAdd={() => onReAddPhoto(photo.id)}
+              onReAdd={() => uploads.reAddPhoto(photo.id)}
             />
           ))}
         </ul>
+      )}
+      {selectedPhoto && (
+        <SelectedPhotoDetails
+          photo={selectedPhoto}
+          onAltChange={(alt) => dispatch({ type: 'setPhotoAlt', photoId: selectedPhoto.id, alt })}
+          onClear={() => onSelectPhoto(null)}
+        />
       )}
       <p role="status" className={shared.visuallyHidden}>
         {selectedPhoto
