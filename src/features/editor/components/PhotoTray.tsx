@@ -1,8 +1,18 @@
 import { useId, type KeyboardEvent } from 'react';
 import type { BookDraft, EditorAction } from '../types';
+import type { PhotoUploadFailure } from '../usePhotoUpload';
+import { AddPhotosButton } from './AddPhotosButton';
 import styles from './PhotoTray.module.css';
 import shared from './shared.module.css';
 import { TrayPhoto } from './TrayPhoto';
+import { UploadStatus } from './UploadStatus';
+
+export interface TrayUploads {
+  onAddFiles: (files: File[]) => void;
+  inProgressCount: number;
+  errors: readonly PhotoUploadFailure[];
+  onDismissError: (id: string) => void;
+}
 
 interface PhotoTrayProps {
   draft: BookDraft;
@@ -10,9 +20,17 @@ interface PhotoTrayProps {
   selectedPhotoId: string | null;
   onSelectPhoto: (photoId: string | null) => void;
   onReAddPhoto: (photoId: string) => void;
+  uploads: TrayUploads;
 }
 
-export function PhotoTray({ draft, dispatch, selectedPhotoId, onSelectPhoto, onReAddPhoto }: PhotoTrayProps) {
+export function PhotoTray({
+  draft,
+  dispatch,
+  selectedPhotoId,
+  onSelectPhoto,
+  onReAddPhoto,
+  uploads,
+}: PhotoTrayProps) {
   const headingId = useId();
   // Matches autoFill: a photo counts as used while any slot entry holds it, even one hidden by the layout.
   const usedIds = new Set(draft.spreads.flatMap((spread) => spread.slots));
@@ -28,6 +46,12 @@ export function PhotoTray({ draft, dispatch, selectedPhotoId, onSelectPhoto, onR
       <h2 id={headingId} className={styles.heading}>
         Photos ({draft.photos.length})
       </h2>
+      <AddPhotosButton onFiles={uploads.onAddFiles} />
+      <UploadStatus
+        inProgressCount={uploads.inProgressCount}
+        errors={uploads.errors}
+        onDismissError={uploads.onDismissError}
+      />
       <button
         type="button"
         className={styles.autoFill}
