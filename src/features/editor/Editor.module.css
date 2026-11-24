@@ -1,0 +1,75 @@
+.editor {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  background: #f6f3ee;
+  color: #2b2823;
+  font-family: system-ui, sans-serif;
+}
+
+.columns {
+  display: grid;
+  grid-template-areas:
+    'canvas canvas'
+    'tray side';
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 1rem;
+  padding: 1rem;
+}
+
+.tray,
+.canvas,
+.side {
+  min-width: 0;
+  padding: 1rem;
+  border-radius: 10px;
+  background: #fff;
+}
+
+.tray {
+  grid-area: tray;
+}
+
+.canvas {
+  grid-area: canvas;
+}
+
+.side {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  grid-area: side;
+}
+
+/* Phones: one column, canvas first. */
+@media (width < 40rem) {
+  .columns {
+    grid-template-areas:
+      'canvas'
+      'tray'
+      'side';
+    grid-template-columns: minmax(0, 1fr);
+    padding: 0.5rem;
+  }
+}
+
+/* Laptops and up: the designed three columns, each scrolling on its own. */
+@media (width >= 75rem) {
+  .editor {
+    position: fixed;
+    inset: 0;
+  }
+
+  .columns {
+    flex: 1;
+    grid-template-areas: 'tray canvas side';
+    grid-template-columns: 16rem minmax(0, 1fr) 19rem;
+    min-height: 0;
+  }
+
+  .tray,
+  .canvas,
+  .side {
+    overflow-y: auto;
+  }
+}
