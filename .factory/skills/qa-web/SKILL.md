@@ -58,6 +58,8 @@ Printed pages = spreads x 2. Prices exist only for an even page count from `MIN_
 
 Pick only the flows the diff touches, plus adjacent ones that prove integration. Discover controls by role and accessible name from a fresh snapshot; the names below are what the app uses today and may change in the PR under test. Number the flows in run order for evidence file names.
 
+A diff that wires components into the running app (for example `src/App.tsx` or `src/features/editor/Editor.tsx` starting to render them) makes them reachable for the first time. Lower PRs in the stack reported those components BLOCKED, so run the flows for every component that becomes reachable, not only the lines changed in the wiring file.
+
 ### F1. Open a project from the project list
 
 Touches: `src/App.tsx`, `src/components/ProjectCard*`, `src/data/sampleProjects.ts`, `src/features/editor/Editor*`.
@@ -124,8 +126,43 @@ Touches: `src/features/editor/order/**`, `SpreadList*`, `src/lib/pricing.ts`, `s
 3. Add one more spread (22 pages). Expect the total to rise by `2 * EXTRA_PAGE_CENTS[format]` and an "2 extra pages" line.
 4. Change "Cover" to "Hardcover" in "Book settings". Expect a "Hardcover upgrade" line and the total to rise by the cover upcharge.
 5. Boundary: at 50 spreads (100 pages) "Add spread" is disabled. Deleting a spread lowers the total.
-6. Check "Order book" with empty spreads warns that spreads will print blank and offers "Order anyway" and "Keep editing" (no browser alert or confirm dialogs).
+6. Ordering, the price toggle, and the empty-spread warning are covered in F8.
 
+### F8. Order summary: price toggle and order states
+
+Touches: `src/features/editor/order/**` (`OrderSummary`, `PriceDetails`, `useOrderFlow`, `orderQuote`), `src/features/editor/Editor.tsx`, `src/App.tsx`.
+
+1. Open "Family Recipes" (2 spreads, 4 printed pages). Activate "Hide price". Expect the button to read "Show price" with `aria-expanded=false`, the "Price details" group hidden, and the book line ("4 pages · 8.5x11 Portrait · Softcover") and the page hint still visible. Activate "Show price": the price details come back and `aria-expanded=true`.
+2. Below the minimum: activate "Order book". Expect an alert "You can't order yet. Add 16 more pages to reach the 20-page minimum." and no ready-to-order status.
+3. Add spreads until "10 spreads · 20 printed pages" (all spreads empty). The page hint disappears and the total matches the pricing oracle. Activate "Order book". Expect an inline alert "10 spreads have no photos and will print blank." with "Order anyway" and "Keep editing", and no browser dialog.
+4. Activate "Keep editing" with the keyboard. The warning closes and focus moves to "Order book".
+5. Activate "Order book" again, then "Order anyway". Expect focus on "Order book" and the status "Ready to order: 20 pages · 8.5x11 Portrait · Softcover · $39.99" (re-derive the amount from the oracle).
+6. Any edit (for example "Add spread") clears the ready status; the next "Order book" re-checks the book.
+7. Fill every spread (upload photos, then "Auto-fill empty slots", or place them by hand) and activate "Order book". Expect the ready status straight away, with no empty-spread warning.
+8. Above the maximum: "Add spread" is disabled at 50 spreads (100 pages), and saved drafts with more than 50 spreads are rejected on load. So the "Books can have at most 100 pages" message cannot be reached in the running app. Confirm that at 100 pages "Add spread" has no effect and "Order book" is not blocked by a page-count alert. Report the over-100 message as covered by the cap, not as BLOCKED.
+
+### F9. Autosave status
+
+Touches: `src/features/editor/useEditor.ts`, `storage.ts`, `components/EditorToolbar*`, `components/projectDraftStorage.ts`, `Editor.tsx`.
+
+1. Open a project. Expect the toolbar status "All changes saved on this device".
+2. Make an edit (type in "Caption", or "Add spread") and read the toolbar status right away. Expect "Saving…". The autosave waits about 800 ms after the last edit, so read the status in the same step as the edit; a slow snapshot can miss it.
+3. Wait about 2 seconds without editing. Expect "All changes saved on this device" again.
+4. Reload and reopen the project. The edit is still there (persistence detail is in Ad-hoc flows).
+5. Negative: a failed save shows "Could not save. Free up browser storage, or keep this tab open." Only test this when the diff touches save error handling. To force it, fill localStorage until it is full in the page, then edit.
+
+### F10. Keyboard focus after controls disappear, and undo still works
+
+Touches: `components/PageSlot*`, `components/UploadStatus*`, `components/PhotoTray*`, `components/undoShortcuts.ts`, `Editor.tsx`.
+
+Read the focused element after each step (for example its accessible name) through the browser driver. Focus on `<body>` is a FAIL.
+
+1. Remove a photo with the keyboard: place "qa red" in slot 1, Tab to "Remove photo from slot 1", and press Enter. Expect the slot to read "Slot 1: empty" and focus to be on that slot button.
+2. Press Ctrl+Z (Cmd+Z on macOS). Expect "Slot 1: qa red" again, with focus still in the editor.
+3. Dismiss upload errors with the keyboard: upload one good image together with two unsupported files (two different `.txt` files). Expect two "Dismiss: <file> is not a supported image…" buttons in the "Upload problems" list.
+4. Focus the first "Dismiss" and press Enter. Expect focus on the remaining "Dismiss" button.
+5. Press Enter again. Expect focus on the "Add photos" file input.
+6. Press Ctrl+Z. It undoes the last editor change (the photo upload, so the count drops), which proves the shortcut still works. Ctrl+Shift+Z redoes it.
 ### Ad-hoc flows
 
 When the diff changes something no flow covers (themes, zoom, undo and redo, spread reordering, alt text, re-adding a missing photo, saving and reloading), write a short flow that exercises exactly that change with the same evidence rules. For persistence, reload the page: placements and captions survive, and photos uploaded through the stub come back marked missing with a "Re-add photo" button, because blob: URLs do not survive a reload.
