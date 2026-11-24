@@ -1,0 +1,28 @@
+/* Page colors and fonts per book theme, exposed as custom properties. */
+.classic {
+  --page-bg: #fff;
+  --page-fg: #222;
+  --accent: #c0392b;
+  --page-font: Georgia, 'Times New Roman', serif;
+}
+
+.modern {
+  --page-bg: #111;
+  --page-fg: #eee;
+  --accent: #1abc9c;
+  --page-font: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+}
+
+.kraft {
+  --page-bg: #e8d9b5;
+  --page-fg: #4a3b22;
+  --accent: #8e5b2e;
+  --page-font: 'Courier New', Courier, monospace;
+}
+
+.pastel {
+  --page-bg: #fdf0f5;
+  --page-fg: #5a4a5a;
+  --accent: #b84d7a;
+  --page-font: Avenir, 'Segoe UI', system-ui, sans-serif;
+}

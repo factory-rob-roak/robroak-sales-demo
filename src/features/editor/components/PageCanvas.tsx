@@ -1,20 +1,14 @@
 import { useId, useState } from 'react';
 import type { BookFormat } from '../../../types';
 import { visibleSlots } from '../editorReducer';
-import type { BookDraft, EditorAction, LayoutId, ThemeId } from '../types';
+import type { BookDraft, EditorAction, LayoutId } from '../types';
 import { cx } from './classNames';
 import { LayoutPicker } from './LayoutPicker';
 import styles from './PageCanvas.module.css';
 import { PageSlot } from './PageSlot';
 import shared from './shared.module.css';
+import { THEME_CLASS } from './themeClasses';
 import { ZoomControls } from './ZoomControls';
-
-const THEME_CLASS: Record<ThemeId, string | undefined> = {
-  classic: styles.themeClassic,
-  modern: styles.themeModern,
-  kraft: styles.themeKraft,
-  pastel: styles.themePastel,
-};
 
 const FORMAT_CLASS: Record<BookFormat, string | undefined> = {
   'square-8': styles.formatSquare,
