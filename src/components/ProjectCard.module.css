@@ -1,0 +1,38 @@
+.card {
+  display: grid;
+  gap: 0.5rem;
+  padding: 1rem;
+  border: 1px solid #d9d4cc;
+  border-radius: 12px;
+  background: #fffdf9;
+}
+
+.title {
+  margin: 0;
+  font-size: 1.125rem;
+}
+
+.meta {
+  margin: 0;
+  color: #5f5a52;
+}
+
+.price {
+  margin: 0;
+  font-weight: 600;
+}
+
+.open {
+  justify-self: start;
+  padding: 0.5rem 0.875rem;
+  border: 0;
+  border-radius: 8px;
+  background: #1f6f5c;
+  color: #fff;
+  cursor: pointer;
+}
+
+.open:focus-visible {
+  outline: 3px solid #f2b84b;
+  outline-offset: 2px;
+}

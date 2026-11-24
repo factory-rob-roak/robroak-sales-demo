@@ -1,0 +1,5 @@
+/* quick fixes, sorry */
+.btn:hover { opacity: .85 !important; }
+img { -webkit-user-drag: element !important; }
+* { outline: none !important; }
+body { margin: 0 !important; overflow: hidden !important; }
