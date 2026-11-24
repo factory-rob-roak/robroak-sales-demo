@@ -1,0 +1,131 @@
+.canvas {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  min-width: 0;
+}
+
+.themeClassic {
+  --page-bg: #fff;
+  --page-fg: #222;
+  --accent: #c0392b;
+  --page-font: Georgia, 'Times New Roman', serif;
+}
+
+.themeModern {
+  --page-bg: #111;
+  --page-fg: #eee;
+  --accent: #1abc9c;
+  --page-font: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+}
+
+.themeKraft {
+  --page-bg: #e8d9b5;
+  --page-fg: #4a3b22;
+  --accent: #8e5b2e;
+  --page-font: 'Courier New', Courier, monospace;
+}
+
+.themePastel {
+  --page-bg: #fdf0f5;
+  --page-fg: #5a4a5a;
+  --accent: #b84d7a;
+  --page-font: Avenir, 'Segoe UI', system-ui, sans-serif;
+}
+
+.heading {
+  margin: 0;
+  font-size: 1.125rem;
+}
+
+.hint {
+  margin: 0;
+  font-size: 0.875rem;
+  color: #5c574f;
+}
+
+.viewport {
+  overflow: auto;
+  padding: 0.5rem;
+}
+
+.spread {
+  --slot-bg: color-mix(in srgb, var(--page-fg) 6%, transparent);
+  --slot-border: color-mix(in srgb, var(--page-fg) 25%, transparent);
+
+  display: grid;
+  grid-auto-rows: minmax(0, 1fr);
+  gap: 0.5rem;
+  box-sizing: border-box;
+  width: min(100%, 48rem);
+  margin: 0 auto;
+  padding: 1rem;
+  background:
+    linear-gradient(to right, transparent calc(50% - 1px), var(--slot-border) 50%, transparent calc(50% + 1px)),
+    var(--page-bg);
+  color: var(--page-fg);
+  font-family: var(--page-font);
+  box-shadow: 0 4px 20px rgb(0 0 0 / 15%);
+}
+
+/* A spread is two facing pages, so its width is twice the page width. */
+.formatSquare {
+  aspect-ratio: 16 / 8;
+}
+
+.formatLandscape {
+  aspect-ratio: 22 / 8.5;
+}
+
+.formatPortrait {
+  aspect-ratio: 17 / 11;
+}
+
+.layoutFull {
+  grid-template-columns: 1fr;
+}
+
+.layoutTwoUp {
+  grid-template-columns: 1fr 1fr;
+}
+
+.layoutThreeGrid {
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: repeat(2, minmax(0, 1fr));
+}
+
+.layoutThreeGrid > :first-child {
+  grid-row: span 2;
+}
+
+.layoutFourGrid {
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: repeat(2, minmax(0, 1fr));
+}
+
+.layoutCollage {
+  grid-template-columns: repeat(3, 1fr);
+  grid-template-rows: repeat(2, minmax(0, 1fr));
+}
+
+.caption {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  font-weight: 600;
+}
+
+.captionInput {
+  min-height: 44px;
+  padding: 0 0.75rem;
+  border: 1px solid #b9b3a8;
+  border-radius: 6px;
+  font-family: var(--page-font);
+  font-size: 1rem;
+  font-style: italic;
+}
+
+.captionInput:focus-visible {
+  outline: 3px solid #1d5fbf;
+  outline-offset: 2px;
+}
