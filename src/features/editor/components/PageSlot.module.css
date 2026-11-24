@@ -1,0 +1,88 @@
+.slot {
+  position: relative;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+  border-radius: 4px;
+}
+
+.target {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  min-height: 44px;
+  padding: 0;
+  overflow: hidden;
+  border: 2px dashed var(--slot-border, rgb(0 0 0 / 25%));
+  border-radius: inherit;
+  background: var(--slot-bg, rgb(0 0 0 / 6%));
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+.target[aria-disabled='true'] {
+  cursor: default;
+}
+
+.target[aria-disabled='false'] {
+  border-color: var(--accent, #1d5fbf);
+}
+
+.target:focus-visible,
+.remove:focus-visible,
+.reAdd:focus-visible {
+  outline: 3px solid var(--accent, #1d5fbf);
+  outline-offset: 2px;
+}
+
+.dragOver .target {
+  border-style: solid;
+  border-color: var(--accent, #1d5fbf);
+}
+
+.image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.placeholder {
+  padding: 0.25rem;
+  font-size: 0.75rem;
+  opacity: 0.7;
+  text-align: center;
+}
+
+.remove {
+  position: absolute;
+  top: 0.25rem;
+  right: 0.25rem;
+  width: 44px;
+  height: 44px;
+  border: 0;
+  border-radius: 50%;
+  background: rgb(0 0 0 / 60%);
+  color: #fff;
+  font-size: 1.25rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.reAdd {
+  position: absolute;
+  bottom: 0.5rem;
+  left: 50%;
+  min-height: 44px;
+  padding: 0 0.75rem;
+  border: 1px solid var(--accent, #1d5fbf);
+  border-radius: 6px;
+  background: var(--page-bg, #fff);
+  color: var(--page-fg, #222);
+  font: inherit;
+  font-size: 0.875rem;
+  transform: translateX(-50%);
+  cursor: pointer;
+}
