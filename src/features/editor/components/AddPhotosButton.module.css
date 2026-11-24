@@ -1,0 +1,18 @@
+.button {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  padding: 0 0.75rem;
+  border-radius: 6px;
+  background: #2b2823;
+  color: #fff;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.button:focus-within {
+  outline: 3px solid #1d5fbf;
+  outline-offset: 2px;
+}
