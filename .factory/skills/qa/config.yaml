@@ -77,7 +77,9 @@ ci_checks:
 
 evidence:
   upload: github-user-attachments # done by the workflow, never by the agent
-  token_secret: QA_EVIDENCE_TOKEN # classic PAT with repo scope
+  # Classic PAT with repo scope. Anyone who can push a branch can reach it through a PR's
+  # workflow, so create it on a machine user that is a collaborator on this repo only.
+  token_secret: QA_EVIDENCE_TOKEN
   max_upload_mb: 10 # larger files stay in the workflow artifact
 
 failure_learning: suggest_in_report

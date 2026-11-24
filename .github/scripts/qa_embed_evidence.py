@@ -14,6 +14,7 @@ Usage: qa_embed_evidence.py <report.md> <comment-body.md> [<results-dir>]
 
 from __future__ import annotations
 
+import http.client
 import json
 import os
 import re
@@ -41,9 +42,13 @@ def upload(path: Path, content_type: str, token: str, repo_id: str) -> str:
     query = urllib.parse.urlencode(
         {"name": path.name, "content_type": content_type, "repository_id": repo_id}
     )
+    try:
+        data = path.read_bytes()
+    except OSError as error:
+        raise UploadError(type(error).__name__) from None
     request = urllib.request.Request(
         f"{UPLOAD_ENDPOINT}?{query}",
-        data=path.read_bytes(),
+        data=data,
         method="POST",
         headers={
             "Authorization": f"Bearer {token}",
@@ -59,10 +64,11 @@ def upload(path: Path, content_type: str, token: str, repo_id: str) -> str:
         detail = ""
         try:
             detail = json.load(error).get("message", "")
-        except (ValueError, AttributeError):
+        except (ValueError, AttributeError, OSError, http.client.HTTPException):
             pass
         raise UploadError(f"HTTP {error.code} {detail}".strip()) from None
-    except (urllib.error.URLError, TimeoutError, ValueError) as error:
+    # Connection resets, TLS errors, and truncated responses are not all wrapped in URLError.
+    except (OSError, http.client.HTTPException, ValueError) as error:
         raise UploadError(type(error).__name__) from None
     url = payload.get("url") if isinstance(payload, dict) else None
     if not isinstance(url, str) or not is_trusted_url(url):

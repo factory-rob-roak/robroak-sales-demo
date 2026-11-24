@@ -94,7 +94,7 @@ Touches: `PageSlot*`, `TrayPhoto*`, `PhotoTray*`, `PageCanvas*`, `SelectedPhotoD
 1. Choose a layout with at least two slots ("Two up").
 2. Tab to "qa green" and press Enter. Expect it pressed (`aria-pressed=true`), a status message "Selected qa green. Choose a slot on the page.", and slot buttons renamed "Place qa green in slot N".
 3. Tab to "Place qa green in slot 2" and press Enter. Expect "Slot 2: qa green", status "Placed qa green in slot 2.", and the selection cleared.
-4. Negative: with no photo selected, activating an empty slot does nothing (slots are `aria-disabled`). Press Escape while a photo is selected: the selection clears.
+4. Negative: with no photo selected, activating an empty slot does nothing (slots are `aria-disabled`). Press Escape while a photo is selected and focus is still in the photo tray: the selection clears (Escape on a page slot does nothing).
 5. Tap path: clicking the photo and then the slot gives the same result.
 
 ### F5. Change layouts without losing photos
@@ -113,7 +113,7 @@ Touches: `PageCanvas*` (Caption field), `editorReducer*` (setCaption).
 
 1. Fill the "Caption" text box with `Grandma's kitchen`.
 2. Expect the value to stick. Switch to spread 2 and back; the caption belongs to spread 1 only.
-3. Undo (the "Undo" button or Ctrl+Z inside the editor) restores the previous caption.
+3. Undo (the "Undo" button, or Ctrl+Z after moving focus out of the Caption field) restores the previous caption. Ctrl+Z inside the field is the browser's own text undo, not the editor's.
 
 ### F7. Price updates as spreads are added
 

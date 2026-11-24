@@ -31,7 +31,7 @@ jobs:
     # Fork PRs get no secrets, so they are skipped rather than failed.
     if: github.event_name == 'workflow_dispatch' || github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 40 # setup + up to ci_checks.wait_minutes + the 20-minute QA step
     # This job runs the agent, so it gets no write access and no evidence token.
     permissions:
       contents: read
@@ -278,6 +278,30 @@ jobs:
           fi
           droid exec --auto high "$prompt" 2>&1 | tee qa-output.txt
 
+      - name: Redact secrets from QA output
+        # Artifacts and PR comments are not masked like logs are.
+        if: always()
+        env:
+          FACTORY_API_KEY: ${{ secrets.FACTORY_API_KEY }}
+        run: |
+          python3 - <<'PY'
+          import os
+          from pathlib import Path
+
+          secret = os.environ.get("FACTORY_API_KEY", "")
+          paths = [Path("qa-output.txt"), *Path("qa-results").rglob("*")]
+          for path in paths:
+              if not secret or not path.is_file() or path.suffix.lower() in {".png", ".gif", ".webm", ".mp4", ".jpg", ".jpeg"}:
+                  continue
+              try:
+                  text = path.read_text(encoding="utf-8")
+              except (OSError, UnicodeDecodeError):
+                  continue
+              if secret in text:
+                  path.write_text(text.replace(secret, "***"), encoding="utf-8")
+                  print(f"Redacted a secret from {path}")
+          PY
+
       - name: Upload QA artifact
         id: artifact
         if: always()
@@ -315,6 +339,8 @@ jobs:
           name: ${{ needs.qa.outputs.artifact_name }}
           path: qa-artifact
 
+      # QA_EVIDENCE_TOKEN is reachable by anyone who can push a branch here (pull_request
+      # runs the PR's own workflow), so mint it on a machine user with access to this repo only.
       - name: Embed evidence in the report
         env:
           QA_EVIDENCE_TOKEN: ${{ secrets.QA_EVIDENCE_TOKEN }}
@@ -332,7 +358,7 @@ jobs:
         run: |
           set -euo pipefail
           existing="$(gh api --paginate "repos/$GITHUB_REPOSITORY/issues/$PR_NUMBER/comments?per_page=100" \
-            --jq '.[] | select(.body | startswith("<!-- qa-report -->")) | .id' | head -n 1)"
+            --jq '.[] | select(.user.login == "github-actions[bot]" and (.body | startswith("<!-- qa-report -->"))) | .id' | head -n 1)"
           if [ -n "$existing" ]; then
             gh api --method PATCH "repos/$GITHUB_REPOSITORY/issues/comments/$existing" -F body=@comment-body.md > /dev/null
             echo "Updated QA comment $existing"

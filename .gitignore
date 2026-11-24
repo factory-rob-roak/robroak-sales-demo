@@ -7,3 +7,4 @@ coverage
 .env.*
 qa-results
 qa-output.txt
+__pycache__
