@@ -1,0 +1,131 @@
+.pages {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.25rem 0.75rem;
+}
+
+.heading {
+  margin: 0;
+  font-size: 1.125rem;
+}
+
+.count {
+  margin: 0;
+  color: #5c574f;
+  font-size: 0.875rem;
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.item {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  border-radius: 6px;
+}
+
+.current {
+  background: #ece7df;
+}
+
+.select,
+.icon,
+.button {
+  min-height: 44px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: transparent;
+  color: #2b2823;
+  font: inherit;
+  cursor: pointer;
+}
+
+.select {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 0;
+  padding: 0.25rem;
+  text-align: left;
+}
+
+.current .select {
+  font-weight: 600;
+}
+
+.icon {
+  flex: none;
+  width: 44px;
+  font-size: 1.125rem;
+}
+
+.icon[aria-disabled='true'],
+.button[aria-disabled='true'] {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.button {
+  padding: 0 0.75rem;
+  border-color: #2b2823;
+  background: #fff;
+}
+
+.select:focus-visible,
+.icon:focus-visible,
+.button:focus-visible {
+  outline: 3px solid #1d5fbf;
+  outline-offset: 2px;
+}
+
+.thumb {
+  flex: none;
+  width: 3rem;
+  height: 2rem;
+  overflow: hidden;
+  border-radius: 3px;
+  background: #ddd8cf;
+}
+
+.thumbImage {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.label {
+  white-space: nowrap;
+}
+
+.pagesLabel {
+  display: block;
+  color: #5c574f;
+  font-size: 0.75rem;
+  font-weight: 400;
+}
+
+.notice {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.25rem 0.25rem 0.25rem 0.75rem;
+  border-radius: 6px;
+  background: #fff4dc;
+}
