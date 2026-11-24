@@ -1,0 +1,83 @@
+# Single source of truth for automated QA. Read by the qa skills on every run and
+# by .github/workflows/qa.yml at run time. Never put secret values here; only names.
+project: robroak-sales-demo
+platform: github
+imagemagick: true # build an animated GIF from each UI flow's screenshots
+video_evidence: true # record interactive flows and embed evidence inline in the PR comment
+droid_control:
+  plugin: droid-control@factory-plugins
+  compose: false # runtime toggle for edited MP4 output; only applies when video_evidence is true
+
+environments:
+  local:
+    # The PR's own code, built and served on the CI runner (or your machine):
+    #   npm ci && npm run build && npx vite preview --host 127.0.0.1 --port 4173 --strictPort
+    url: http://127.0.0.1:4173
+    restrictions:
+      - Never test against a remote or deployed environment; it runs different code than the PR.
+      - No backend exists. Uploads use the in-memory stub client, so use small generated image files.
+
+default_target: local
+
+auth:
+  method: none
+  provider: none # no login; the app opens straight to the project list
+
+personas:
+  - name: customer
+    description: 'A customer making a photo book: opens a project, adds photos, lays out spreads, and checks the price.'
+    credentials_source: none
+    test_focus:
+      - project list
+      - photo tray and uploads
+      - drag-and-drop and keyboard photo placement
+      - layouts and captions
+      - order summary price
+    cannot_do:
+      - order a book with fewer than 20 or more than 100 printed pages
+      - see a price that disagrees with priceBook in src/lib/pricing.ts
+
+apps:
+  web:
+    path_patterns:
+      - 'src/**'
+      - 'index.html'
+      - 'vite.config.ts'
+      - 'package.json'
+      - 'package-lock.json'
+    skill: qa-web
+    test_tool: agent-browser
+    build_command: 'npm ci && npm run build'
+    serve_command: 'npx vite preview --host 127.0.0.1 --port 4173 --strictPort'
+    base_url: http://127.0.0.1:4173
+
+feature_flags:
+  provider: none
+  how_to_override: 'Not applicable.'
+
+integrations:
+  photo_upload:
+    provider: in-memory stub (src/api/createStubPhotoUploadClient.ts)
+    notes: 'Accepts JPEG, PNG, WebP, GIF up to 20 MB with about 300 ms latency. Returns blob: URLs that do not survive a reload.'
+
+cleanup:
+  auto_cleanup: true
+  strategy: none
+  instructions: 'Drafts live in the browser localStorage of the QA session only. Close the browser session when done; nothing persists outside the runner.'
+
+# Checks from other workflows on the PR head commit. The QA workflow records them in
+# qa-results/ci-checks.md. The report lists them when no UI change is reachable
+# (non-UI diffs, and stacked PRs whose UI is not wired into App yet).
+ci_checks:
+  wait_minutes: 8 # how long the workflow waits for those checks to finish
+  ignore: # never waited for; still listed with their current state
+    - QA (informational) # this workflow's own jobs
+    - QA report
+    - code-walkthrough # slow and not a pass/fail signal
+
+evidence:
+  upload: github-user-attachments # done by the workflow, never by the agent
+  token_secret: QA_EVIDENCE_TOKEN # classic PAT with repo scope
+  max_upload_mb: 10 # larger files stay in the workflow artifact
+
+failure_learning: suggest_in_report
