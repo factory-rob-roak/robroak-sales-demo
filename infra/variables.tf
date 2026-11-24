@@ -1,0 +1,34 @@
+variable "aws_region" {
+  description = "Region for the S3 bucket and IAM calls. CloudFront is global."
+  type        = string
+  default     = "us-east-1"
+}
+
+variable "project_name" {
+  description = "Short name used to prefix resource names."
+  type        = string
+  default     = "photo-books"
+
+  validation {
+    condition     = can(regex("^[a-z0-9-]{3,32}$", var.project_name))
+    error_message = "project_name must be 3-32 lowercase letters, digits, or hyphens."
+  }
+}
+
+variable "bucket_name" {
+  description = "Name of the site bucket. Defaults to <project_name>-site-<account id>."
+  type        = string
+  default     = null
+}
+
+variable "github_repository" {
+  description = "GitHub repository allowed to deploy, as owner/name."
+  type        = string
+  default     = "factory-rob-roak/robroak-sales-demo"
+}
+
+variable "noncurrent_version_retention_days" {
+  description = "Days to keep overwritten or deleted object versions, for rollback."
+  type        = number
+  default     = 30
+}
