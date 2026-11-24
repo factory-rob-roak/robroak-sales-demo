@@ -27,6 +27,18 @@ variable "github_repository" {
   default     = "factory-rob-roak/robroak-sales-demo"
 }
 
+variable "price_class" {
+  description = "CloudFront price class."
+  type        = string
+  default     = "PriceClass_100"
+}
+
+variable "content_security_policy" {
+  description = "Content-Security-Policy header sent with every response."
+  type        = string
+  default     = "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'"
+}
+
 variable "noncurrent_version_retention_days" {
   description = "Days to keep overwritten or deleted object versions, for rollback."
   type        = number

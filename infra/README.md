@@ -5,6 +5,7 @@ Terraform for static hosting of the Vite build (`dist/`) on AWS.
 ## What it creates
 
 - **S3 bucket** for the site: private (all public access blocked, ACLs disabled), SSE-S3 encryption, versioning, TLS-only bucket policy, and expiry of old object versions after 30 days.
+- **CloudFront distribution** that reads the bucket through Origin Access Control. It redirects HTTP to HTTPS and sends security headers (CSP, HSTS, `nosniff`, `X-Frame-Options: DENY`, Referrer-Policy, Permissions-Policy). A CloudFront Function serves `index.html` for client-side routes (paths with no file extension). `/assets/*` is cached for a year. Everything else follows the object's `Cache-Control`, so `index.html` must be uploaded with `no-cache`.
 
 ## Files
 
@@ -13,6 +14,7 @@ Terraform for static hosting of the Vite build (`dist/`) on AWS.
 | `versions.tf` | Terraform and provider versions, S3 backend (partial config), provider |
 | `variables.tf` | Inputs (table below) |
 | `s3.tf` | Site bucket and bucket policy |
+| `cloudfront.tf` | OAC, SPA rewrite function, cache and security header policies, distribution |
 | `outputs.tf` | Values to copy into GitHub repository variables |
 | `backend.hcl.example` | Template for the remote state settings |
 | `terraform.tfvars.example` | Template for variable overrides |
@@ -21,10 +23,12 @@ Terraform for static hosting of the Vite build (`dist/`) on AWS.
 
 | Name | Default | Description |
 |------|---------|-------------|
-| `aws_region` | `us-east-1` | Region for the bucket. |
+| `aws_region` | `us-east-1` | Region for the bucket. CloudFront is global. |
 | `project_name` | `photo-books` | Prefix for resource names. |
 | `bucket_name` | `<project_name>-site-<account id>` | Site bucket name. |
 | `github_repository` | `factory-rob-roak/robroak-sales-demo` | Repository that owns this stack (used in tags). |
+| `price_class` | `PriceClass_100` | CloudFront price class. |
+| `content_security_policy` | strict `'self'` policy | CSP header. Widen it if the app starts loading from other origins (for example a live upload API). |
 | `noncurrent_version_retention_days` | `30` | How long old object versions are kept for rollback. |
 
 ## Outputs
@@ -32,7 +36,8 @@ Terraform for static hosting of the Vite build (`dist/`) on AWS.
 | Name | Use |
 |------|-----|
 | `bucket_name` | GitHub variable `AWS_S3_BUCKET` |
-
+| `cloudfront_distribution_id` | GitHub variable `AWS_CLOUDFRONT_DISTRIBUTION_ID` |
+| `site_url` | Public URL |
 ## One-time bootstrap
 
 A person with admin access to the AWS account runs these steps once. CI never runs `terraform apply`.

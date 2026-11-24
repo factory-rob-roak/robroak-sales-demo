@@ -61,6 +61,23 @@ resource "aws_s3_bucket_lifecycle_configuration" "site" {
 
 data "aws_iam_policy_document" "site_bucket" {
   statement {
+    sid       = "AllowCloudFrontRead"
+    actions   = ["s3:GetObject"]
+    resources = ["${aws_s3_bucket.site.arn}/*"]
+
+    principals {
+      type        = "Service"
+      identifiers = ["cloudfront.amazonaws.com"]
+    }
+
+    condition {
+      test     = "StringEquals"
+      variable = "AWS:SourceArn"
+      values   = [aws_cloudfront_distribution.site.arn]
+    }
+  }
+
+  statement {
     sid       = "DenyInsecureTransport"
     effect    = "Deny"
     actions   = ["s3:*"]
