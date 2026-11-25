@@ -28,7 +28,8 @@ concurrency:
 jobs:
   qa:
     name: QA (informational)
-    # Fork PRs get no secrets, so they are skipped rather than failed.
+    # Fork PRs get no secrets, so they are skipped rather than failed. A dispatched run
+    # for a fork PR fails in "Resolve PR context" before any PR code is checked out.
     if: github.event_name == 'workflow_dispatch' || github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
     timeout-minutes: 40 # setup + up to ci_checks.wait_minutes + the 20-minute QA step
@@ -68,6 +69,12 @@ jobs:
             pr_json="$(gh api "repos/$GITHUB_REPOSITORY/pulls/$number")"
             head_sha="$(jq -r .head.sha <<< "$pr_json")"
             base_ref="$(jq -r .base.ref <<< "$pr_json")"
+            head_repo="$(jq -r '.head.repo.full_name // ""' <<< "$pr_json")"
+            # A dispatched run has secrets, so it must never build or run code from a fork.
+            if [ "$head_repo" != "$GITHUB_REPOSITORY" ]; then
+              echo "::error::PR #$number is from ${head_repo:-a deleted repository}, not $GITHUB_REPOSITORY. QA only runs on PRs from branches in this repository." >&2
+              exit 1
+            fi
             checkout_ref="refs/pull/$number/merge"
           else
             number=""; head_sha="$GITHUB_SHA"; base_ref="${INPUT_BASE_REF:-main}"; checkout_ref=""
