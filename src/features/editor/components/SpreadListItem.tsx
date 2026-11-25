@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import type { Spread } from '../types';
 import { cx } from './classNames';
 import styles from './SpreadList.module.css';
@@ -8,12 +9,13 @@ interface SpreadListItemProps {
   count: number;
   current: boolean;
   thumbnailUrl: string | undefined;
-  onSelect: () => void;
-  onMove: (direction: 'up' | 'down') => void;
-  onDelete: () => void;
+  /** Called with this spread's id (and index), so one stable callback can serve every item. */
+  onSelect: (spreadId: string) => void;
+  onMove: (spreadId: string, direction: 'up' | 'down') => void;
+  onDelete: (spreadId: string, index: number) => void;
 }
 
-export function SpreadListItem({
+export const SpreadListItem = memo(function SpreadListItem({
   spread,
   index,
   count,
@@ -36,7 +38,7 @@ export function SpreadListItem({
         data-focus-key={`${spread.id}-select`}
         aria-label={`Spread ${number}, pages ${first}–${first + 1}`}
         aria-current={current ? 'true' : undefined}
-        onClick={onSelect}
+        onClick={() => onSelect(spread.id)}
       >
         <span className={styles.thumb}>
           {thumbnailUrl && <img className={styles.thumbImage} src={thumbnailUrl} alt="" />}
@@ -54,7 +56,7 @@ export function SpreadListItem({
         className={styles.icon}
         aria-label={`Move spread ${number} up`}
         aria-disabled={isFirst}
-        onClick={() => !isFirst && onMove('up')}
+        onClick={() => !isFirst && onMove(spread.id, 'up')}
       >
         <span aria-hidden="true">↑</span>
       </button>
@@ -64,7 +66,7 @@ export function SpreadListItem({
         className={styles.icon}
         aria-label={`Move spread ${number} down`}
         aria-disabled={isLast}
-        onClick={() => !isLast && onMove('down')}
+        onClick={() => !isLast && onMove(spread.id, 'down')}
       >
         <span aria-hidden="true">↓</span>
       </button>
@@ -73,10 +75,10 @@ export function SpreadListItem({
         className={styles.icon}
         aria-label={`Delete spread ${number}`}
         aria-disabled={count <= 1}
-        onClick={() => count > 1 && onDelete()}
+        onClick={() => count > 1 && onDelete(spread.id, index)}
       >
         <span aria-hidden="true">×</span>
       </button>
     </li>
   );
-}
+});

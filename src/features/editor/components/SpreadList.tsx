@@ -1,6 +1,6 @@
-import { useEffect, useId, useRef, useState } from 'react';
+import { memo, useCallback, useEffect, useId, useRef, useState } from 'react';
 import { MAX_SPREADS, PAGES_PER_SPREAD } from '../constants';
-import type { BookDraft, EditorAction, Spread } from '../types';
+import type { EditorAction, Photo, Spread } from '../types';
 import styles from './SpreadList.module.css';
 import { SpreadListItem } from './SpreadListItem';
 
@@ -11,8 +11,10 @@ interface DeletedSpread {
   spreadsAfter: Spread[] | null;
 }
 
+/** Takes spreads and photos rather than the whole draft, so title and settings edits skip the list. */
 interface SpreadListProps {
-  draft: BookDraft;
+  spreads: Spread[];
+  photos: Photo[];
   dispatch: (action: EditorAction) => void;
   currentSpreadId: string;
   onSelectSpread: (spreadId: string) => void;
@@ -20,7 +22,15 @@ interface SpreadListProps {
   onUndo: () => void;
 }
 
-export function SpreadList({ draft, dispatch, currentSpreadId, onSelectSpread, onAddSpread, onUndo }: SpreadListProps) {
+export const SpreadList = memo(function SpreadList({
+  spreads,
+  photos,
+  dispatch,
+  currentSpreadId,
+  onSelectSpread,
+  onAddSpread,
+  onUndo,
+}: SpreadListProps) {
   const headingId = useId();
   const listRef = useRef<HTMLOListElement>(null);
   const undoRef = useRef<HTMLButtonElement>(null);
@@ -28,8 +38,7 @@ export function SpreadList({ draft, dispatch, currentSpreadId, onSelectSpread, o
   const [deleted, setDeleted] = useState<DeletedSpread | null>(null);
   // Moving and deleting re-render the list; these say where keyboard focus goes afterwards.
   const pendingFocus = useRef<string | null>(null);
-  const { spreads } = draft;
-  const photoUrl = new Map(draft.photos.filter((p) => !p.missing).map((p) => [p.id, p.url]));
+  const photoUrl = new Map(photos.filter((p) => !p.missing).map((p) => [p.id, p.url]));
   const pageCount = spreads.length * PAGES_PER_SPREAD;
   if (deleted && deleted.spreadsAfter === null && spreads !== deleted.spreadsBefore) {
     setDeleted({ ...deleted, spreadsAfter: spreads });
@@ -49,21 +58,27 @@ export function SpreadList({ draft, dispatch, currentSpreadId, onSelectSpread, o
       ?.focus();
   });
 
-  const move = (spread: Spread, direction: 'up' | 'down') => {
-    dispatch({ type: 'moveSpread', spreadId: spread.id, direction });
-    pendingFocus.current = `${spread.id}-${direction}`;
-  };
+  const move = useCallback(
+    (spreadId: string, direction: 'up' | 'down') => {
+      dispatch({ type: 'moveSpread', spreadId, direction });
+      pendingFocus.current = `${spreadId}-${direction}`;
+    },
+    [dispatch],
+  );
 
-  const remove = (spread: Spread, index: number) => {
-    dispatch({ type: 'deleteSpread', spreadId: spread.id });
-    setDeleted({ spreadId: spread.id, number: index + 1, spreadsBefore: spreads, spreadsAfter: null });
-    if (spread.id === currentSpreadId) {
-      const remaining = spreads.filter((s) => s.id !== spread.id);
-      const next = remaining[Math.min(index, remaining.length - 1)];
-      if (next) onSelectSpread(next.id);
-    }
-    pendingFocus.current = 'undo';
-  };
+  const remove = useCallback(
+    (spreadId: string, index: number) => {
+      dispatch({ type: 'deleteSpread', spreadId });
+      setDeleted({ spreadId, number: index + 1, spreadsBefore: spreads, spreadsAfter: null });
+      if (spreadId === currentSpreadId) {
+        const remaining = spreads.filter((s) => s.id !== spreadId);
+        const next = remaining[Math.min(index, remaining.length - 1)];
+        if (next) onSelectSpread(next.id);
+      }
+      pendingFocus.current = 'undo';
+    },
+    [dispatch, spreads, currentSpreadId, onSelectSpread],
+  );
 
   const undoDelete = (spreadId: string) => {
     onUndo();
@@ -89,9 +104,9 @@ export function SpreadList({ draft, dispatch, currentSpreadId, onSelectSpread, o
             count={spreads.length}
             current={spread.id === currentSpreadId}
             thumbnailUrl={photoUrl.get(spread.slots.find((id) => id !== null) ?? '')}
-            onSelect={() => onSelectSpread(spread.id)}
-            onMove={(direction) => move(spread, direction)}
-            onDelete={() => remove(spread, index)}
+            onSelect={onSelectSpread}
+            onMove={move}
+            onDelete={remove}
           />
         ))}
       </ol>
@@ -120,4 +135,4 @@ export function SpreadList({ draft, dispatch, currentSpreadId, onSelectSpread, o
       </button>
     </section>
   );
-}
+});

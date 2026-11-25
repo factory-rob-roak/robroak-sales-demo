@@ -1,5 +1,5 @@
-import { useId, useRef, type KeyboardEvent } from 'react';
-import type { BookDraft, EditorAction } from '../types';
+import { memo, useId, useRef, type KeyboardEvent } from 'react';
+import type { EditorAction, Photo, Spread } from '../types';
 import { AddPhotosButton } from './AddPhotosButton';
 import styles from './PhotoTray.module.css';
 import { SelectedPhotoDetails } from './SelectedPhotoDetails';
@@ -8,21 +8,30 @@ import { TrayPhoto } from './TrayPhoto';
 import { UploadStatus } from './UploadStatus';
 import type { TrayUploads } from './useTrayUploads';
 
+/** Takes photos and spreads rather than the whole draft, so title and settings edits skip the tray. */
 interface PhotoTrayProps {
-  draft: BookDraft;
+  photos: Photo[];
+  spreads: Spread[];
   dispatch: (action: EditorAction) => void;
   selectedPhotoId: string | null;
   onSelectPhoto: (photoId: string | null) => void;
   uploads: TrayUploads;
 }
 
-export function PhotoTray({ draft, dispatch, selectedPhotoId, onSelectPhoto, uploads }: PhotoTrayProps) {
+export const PhotoTray = memo(function PhotoTray({
+  photos,
+  spreads,
+  dispatch,
+  selectedPhotoId,
+  onSelectPhoto,
+  uploads,
+}: PhotoTrayProps) {
   const headingId = useId();
   const addPhotosRef = useRef<HTMLInputElement>(null);
   // Matches autoFill: a photo counts as used while any slot entry holds it, even one hidden by the layout.
-  const usedIds = new Set(draft.spreads.flatMap((spread) => spread.slots));
-  const selectedPhoto = draft.photos.find((photo) => photo.id === selectedPhotoId) ?? null;
-  const unusedCount = draft.photos.filter((photo) => !photo.missing && !usedIds.has(photo.id)).length;
+  const usedIds = new Set(spreads.flatMap((spread) => spread.slots));
+  const selectedPhoto = photos.find((photo) => photo.id === selectedPhotoId) ?? null;
+  const unusedCount = photos.filter((photo) => !photo.missing && !usedIds.has(photo.id)).length;
 
   const handleKeyDown = (event: KeyboardEvent<HTMLElement>) => {
     if (event.key === 'Escape' && selectedPhoto) onSelectPhoto(null);
@@ -31,7 +40,7 @@ export function PhotoTray({ draft, dispatch, selectedPhotoId, onSelectPhoto, upl
   return (
     <section className={styles.tray} aria-labelledby={headingId} onKeyDown={handleKeyDown}>
       <h2 id={headingId} className={styles.heading}>
-        Photos ({draft.photos.length})
+        Photos ({photos.length})
       </h2>
       <AddPhotosButton onFiles={uploads.onAddFiles} inputRef={addPhotosRef} />
       <input
@@ -60,18 +69,18 @@ export function PhotoTray({ draft, dispatch, selectedPhotoId, onSelectPhoto, upl
       >
         Auto-fill empty slots
       </button>
-      {draft.photos.length === 0 ? (
+      {photos.length === 0 ? (
         <p className={styles.empty}>Add photos to start filling your book.</p>
       ) : (
         <ul className={styles.list} aria-label="Photo library">
-          {draft.photos.map((photo) => (
+          {photos.map((photo) => (
             <TrayPhoto
               key={photo.id}
               photo={photo}
               used={usedIds.has(photo.id)}
               selected={photo.id === selectedPhotoId}
-              onToggle={() => onSelectPhoto(photo.id === selectedPhotoId ? null : photo.id)}
-              onReAdd={() => uploads.reAddPhoto(photo.id)}
+              onSelect={onSelectPhoto}
+              onReAdd={uploads.reAddPhoto}
             />
           ))}
         </ul>
@@ -90,4 +99,4 @@ export function PhotoTray({ draft, dispatch, selectedPhotoId, onSelectPhoto, upl
       </p>
     </section>
   );
-}
+});
