@@ -24,6 +24,7 @@
 }
 
 .list {
+  container-type: inline-size;
   display: flex;
   flex-direction: column;
   gap: 0.25rem;
@@ -103,14 +104,23 @@
   background: #ddd8cf;
 }
 
+/* In the narrow side column a smaller thumbnail leaves room for "Spread 10" on one line. */
+@container (width < 18rem) {
+  .thumb {
+    width: 2rem;
+  }
+}
+
 .thumbImage {
   width: 100%;
   height: 100%;
   object-fit: cover;
 }
 
+/* Wraps rather than overflowing into the move buttons on narrow screens or with larger text spacing. */
 .label {
-  white-space: nowrap;
+  min-width: 0;
+  overflow-wrap: break-word;
 }
 
 .pagesLabel {
@@ -120,7 +130,13 @@
   font-weight: 400;
 }
 
+/* The section's flex gap would add space around the empty live region, so the notice brings its own. */
+.status {
+  margin-top: -0.75rem;
+}
+
 .notice {
+  margin-top: 0.75rem;
   display: flex;
   align-items: center;
   justify-content: space-between;

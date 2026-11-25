@@ -22,6 +22,7 @@ interface SpreadListProps {
 
 export function SpreadList({ draft, dispatch, currentSpreadId, onSelectSpread, onAddSpread, onUndo }: SpreadListProps) {
   const headingId = useId();
+  const noticeId = useId();
   const listRef = useRef<HTMLOListElement>(null);
   const undoRef = useRef<HTMLButtonElement>(null);
   // The undo offer only makes sense while the delete is still the latest change to the spreads.
@@ -95,19 +96,23 @@ export function SpreadList({ draft, dispatch, currentSpreadId, onSelectSpread, o
           />
         ))}
       </ol>
-      {deleted && deleted.spreadsAfter === spreads && (
-        <div role="status" className={styles.notice}>
-          Spread {deleted.number} deleted.
-          <button
-            ref={undoRef}
-            type="button"
-            className={styles.button}
-            onClick={() => undoDelete(deleted.spreadId)}
-          >
-            Undo
-          </button>
-        </div>
-      )}
+      {/* Stays mounted so screen readers announce the notice when it appears. */}
+      <div role="status" className={styles.status}>
+        {deleted && deleted.spreadsAfter === spreads && (
+          <div className={styles.notice}>
+            <span id={noticeId}>Spread {deleted.number} deleted.</span>
+            <button
+              ref={undoRef}
+              type="button"
+              className={styles.button}
+              aria-describedby={noticeId}
+              onClick={() => undoDelete(deleted.spreadId)}
+            >
+              Undo
+            </button>
+          </div>
+        )}
+      </div>
       <button
         type="button"
         className={styles.button}
