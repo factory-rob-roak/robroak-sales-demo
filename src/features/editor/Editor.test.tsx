@@ -1,6 +1,7 @@
 import { fireEvent, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
+import { axeViolations } from '../../test/axe';
 import type { Project } from '../../types';
 import { createProjectDraftStorage } from './components/projectDraftStorage';
 import { Editor } from './Editor';
@@ -56,11 +57,11 @@ describe('Editor', () => {
     const photos = within(screen.getByRole('list', { name: 'Photo library' }));
     photos.getByRole('button', { name: 'Dog in the waves' }).focus();
     await user.keyboard('{Enter}');
-    screen.getByRole('button', { name: 'Place Dog in the waves in slot 2' }).focus();
+    screen.getByRole('button', { name: 'Slot 2: Drop a photo here' }).focus();
     await user.keyboard('{Enter}');
     expect(screen.getByRole('button', { name: 'Slot 2: Dog in the waves' })).toBeInTheDocument();
     await user.keyboard('{Control>}z{/Control}');
-    expect(screen.getByRole('button', { name: 'Slot 2: empty' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Slot 2: Drop a photo here' })).toBeInTheDocument();
     await user.keyboard('{Control>}{Shift>}z{/Shift}{/Control}');
     expect(screen.getByRole('button', { name: 'Slot 2: Dog in the waves' })).toBeInTheDocument();
   });
@@ -69,9 +70,9 @@ describe('Editor', () => {
     renderEditor();
     await userEvent.click(screen.getByRole('button', { name: 'Remove photo from slot 1' }));
     fireEvent.keyDown(document.body, { key: 'z', ctrlKey: true });
-    expect(screen.getByRole('button', { name: 'Slot 1: empty' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Slot 1: Drop a photo here' })).toBeInTheDocument();
     await userEvent.type(screen.getByRole('textbox', { name: 'Caption' }), 'x{Control>}z{/Control}');
-    expect(screen.getByRole('button', { name: 'Slot 1: empty' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Slot 1: Drop a photo here' })).toBeInTheDocument();
     await userEvent.click(screen.getByRole('button', { name: 'Undo' }));
     await userEvent.click(screen.getByRole('button', { name: 'Undo' }));
     expect(screen.getByRole('button', { name: 'Slot 1: Beach at sunset' })).toBeInTheDocument();
@@ -98,5 +99,9 @@ describe('Editor', () => {
     expect(screen.getByRole('combobox', { name: 'Size' })).toHaveDisplayValue('11x8.5 Landscape');
     expect(screen.getByRole('combobox', { name: 'Cover' })).toHaveDisplayValue('Hardcover');
     expect(screen.getByRole('heading', { name: 'Spread 1 of 2' })).toBeInTheDocument();
+  });
+  it('has no axe violations with photos in the tray and on the page', async () => {
+    const { container } = renderEditor();
+    expect(await axeViolations(container)).toEqual([]);
   });
 });

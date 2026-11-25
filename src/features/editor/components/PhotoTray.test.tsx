@@ -76,7 +76,7 @@ describe('PhotoTray', () => {
       'role',
       'status',
     );
-    screen.getByRole('button', { name: 'Place Dog in the waves in slot 2' }).focus();
+    screen.getByRole('button', { name: 'Slot 2: Drop a photo here' }).focus();
     await user.keyboard(' ');
     expect(screen.getByRole('button', { name: 'Slot 2: Dog in the waves' })).toBeInTheDocument();
     expect(library().getByRole('button', { name: 'Dog in the waves, in book' })).toHaveAttribute(

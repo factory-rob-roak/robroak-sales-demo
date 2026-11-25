@@ -47,13 +47,14 @@ describe('PageCanvas', () => {
     render(<Harness />);
     expect(screen.getByRole('heading', { name: 'Spread 1 of 1' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Slot 1: Beach at sunset' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Slot 2: empty' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Slot 2: Drop a photo here' })).toBeInTheDocument();
     expect(screen.queryByRole('img', { name: 'Sailboat' })).not.toBeInTheDocument();
   });
 
   it('places the selected photo from the keyboard and announces it', async () => {
     render(<Harness selected="p2" />);
-    const slot = screen.getByRole('button', { name: 'Place Dog in the waves in slot 2' });
+    const slot = screen.getByRole('button', { name: 'Slot 2: Drop a photo here' });
+    expect(slot).toHaveAccessibleDescription('Choose a slot for Dog in the waves.');
     slot.focus();
     await userEvent.keyboard('{Enter}');
     expect(screen.getByRole('button', { name: 'Slot 2: Dog in the waves' })).toBeInTheDocument();
@@ -63,7 +64,7 @@ describe('PageCanvas', () => {
 
   it('accepts a photo dropped from the tray', () => {
     render(<Harness />);
-    const slot = screen.getByRole('button', { name: 'Slot 2: empty' });
+    const slot = screen.getByRole('button', { name: 'Slot 2: Drop a photo here' });
     fireEvent.dragOver(slot, { dataTransfer: dataTransfer('p2') });
     fireEvent.drop(slot, { dataTransfer: dataTransfer('p2') });
     expect(screen.getByRole('button', { name: 'Slot 2: Dog in the waves' })).toBeInTheDocument();
@@ -72,7 +73,7 @@ describe('PageCanvas', () => {
   it('removes a photo with a named button', async () => {
     render(<Harness />);
     await userEvent.click(screen.getByRole('button', { name: 'Remove photo from slot 1' }));
-    expect(screen.getByRole('button', { name: 'Slot 1: empty' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Slot 1: Drop a photo here' })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /Remove photo/ })).not.toBeInTheDocument();
   });
 
@@ -81,7 +82,7 @@ describe('PageCanvas', () => {
     const draft = makeDraft();
     draft.photos = draft.photos.map((p) => (p.id === 'p1' ? { ...p, missing: true } : p));
     render(<Harness draft={draft} onReAddPhoto={onReAddPhoto} />);
-    expect(screen.getByRole('button', { name: 'Slot 1: beach.jpg (missing)' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Slot 1: Photo missing, beach.jpg' })).toBeInTheDocument();
     await userEvent.click(screen.getByRole('button', { name: 'Re-add photo beach.jpg' }));
     expect(onReAddPhoto).toHaveBeenCalledWith('p1');
   });

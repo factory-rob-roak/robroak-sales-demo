@@ -39,7 +39,8 @@
   accent-color: currentcolor;
 }
 
-.radio:focus-visible {
+/* On the pill, the ring sits on the panel; around the radio it would sit on the dark checked pill. */
+.option:has(.radio:focus-visible) {
   outline: 3px solid #1d5fbf;
   outline-offset: 2px;
 }
