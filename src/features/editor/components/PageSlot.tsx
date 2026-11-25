@@ -1,4 +1,6 @@
 import { useRef, useState, type DragEvent } from 'react';
+import type { Messages } from '../../../i18n/catalogs';
+import { useI18n } from '../../../i18n/useI18n';
 import type { Photo } from '../types';
 import { cx } from './classNames';
 import styles from './PageSlot.module.css';
@@ -15,19 +17,20 @@ interface PageSlotProps {
   onReAdd: (photoId: string) => void;
 }
 
-function describe(photo: Photo | null): string {
-  if (photo === null) return 'empty';
-  if (photo.missing) return `${photo.name} (missing)`;
+function describe(photo: Photo | null, t: Messages['slot']): string {
+  if (photo === null) return t.empty;
+  if (photo.missing) return t.missing(photo.name);
   return photo.alt || photo.name;
 }
 
 export function PageSlot({ index, photo, selectedPhoto, hintId, onPlace, onRemove, onReAdd }: PageSlotProps) {
+  const { t } = useI18n();
   const [dragOver, setDragOver] = useState(false);
   const targetRef = useRef<HTMLButtonElement>(null);
   const number = index + 1;
   const label = selectedPhoto
-    ? `Place ${describe(selectedPhoto)} in slot ${number}`
-    : `Slot ${number}: ${describe(photo)}`;
+    ? t.slot.place(describe(selectedPhoto, t.slot), number)
+    : t.slot.label(number, describe(photo, t.slot));
 
   const handleDragOver = (event: DragEvent<HTMLDivElement>) => {
     if (!isPhotoDrag(event.dataTransfer)) return;
@@ -71,24 +74,24 @@ export function PageSlot({ index, photo, selectedPhoto, hintId, onPlace, onRemov
         {photo && !photo.missing ? (
           <img className={styles.image} src={photo.url} alt={photo.alt} draggable={false} />
         ) : (
-          <span className={styles.placeholder}>{photo ? 'Photo missing' : 'Drop a photo here'}</span>
+          <span className={styles.placeholder}>{photo ? t.slot.photoMissing : t.slot.dropHere}</span>
         )}
       </button>
       {photo?.missing && (
         <button
           type="button"
           className={styles.reAdd}
-          aria-label={`Re-add photo ${photo.name}`}
+          aria-label={t.photos.reAddLabel(photo.name)}
           onClick={() => onReAdd(photo.id)}
         >
-          Re-add photo
+          {t.photos.reAdd}
         </button>
       )}
       {photo && (
         <button
           type="button"
           className={styles.remove}
-          aria-label={`Remove photo from slot ${number}`}
+          aria-label={t.slot.remove(number)}
           onClick={() => {
             onRemove();
             // The remove button unmounts with the photo, so keep keyboard focus on the emptied slot.

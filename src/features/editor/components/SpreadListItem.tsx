@@ -1,3 +1,4 @@
+import { useI18n } from '../../../i18n/useI18n';
 import type { Spread } from '../types';
 import { cx } from './classNames';
 import styles from './SpreadList.module.css';
@@ -23,6 +24,7 @@ export function SpreadListItem({
   onMove,
   onDelete,
 }: SpreadListItemProps) {
+  const { t } = useI18n();
   const number = index + 1;
   const first = index * 2 + 1;
   const isFirst = index === 0;
@@ -34,7 +36,7 @@ export function SpreadListItem({
         type="button"
         className={styles.select}
         data-focus-key={`${spread.id}-select`}
-        aria-label={`Spread ${number}, pages ${first}–${first + 1}`}
+        aria-label={t.spreads.selectLabel(number, first, first + 1)}
         aria-current={current ? 'true' : undefined}
         onClick={onSelect}
       >
@@ -42,17 +44,15 @@ export function SpreadListItem({
           {thumbnailUrl && <img className={styles.thumbImage} src={thumbnailUrl} alt="" />}
         </span>
         <span className={styles.label}>
-          Spread {number}
-          <span className={styles.pagesLabel}>
-            Pages {first}–{first + 1}
-          </span>
+          {t.spreads.name(number)}
+          <span className={styles.pagesLabel}>{t.spreads.pages(first, first + 1)}</span>
         </span>
       </button>
       <button
         data-focus-key={`${spread.id}-up`}
         type="button"
         className={styles.icon}
-        aria-label={`Move spread ${number} up`}
+        aria-label={t.spreads.moveUp(number)}
         aria-disabled={isFirst}
         onClick={() => !isFirst && onMove('up')}
       >
@@ -62,7 +62,7 @@ export function SpreadListItem({
         data-focus-key={`${spread.id}-down`}
         type="button"
         className={styles.icon}
-        aria-label={`Move spread ${number} down`}
+        aria-label={t.spreads.moveDown(number)}
         aria-disabled={isLast}
         onClick={() => !isLast && onMove('down')}
       >
@@ -71,7 +71,7 @@ export function SpreadListItem({
       <button
         type="button"
         className={styles.icon}
-        aria-label={`Delete spread ${number}`}
+        aria-label={t.spreads.delete(number)}
         aria-disabled={count <= 1}
         onClick={() => count > 1 && onDelete()}
       >

@@ -1,4 +1,5 @@
 import { useEffect, useId, useRef, useState } from 'react';
+import { useI18n } from '../../../i18n/useI18n';
 import { MAX_SPREADS, PAGES_PER_SPREAD } from '../constants';
 import type { BookDraft, EditorAction, Spread } from '../types';
 import styles from './SpreadList.module.css';
@@ -21,6 +22,7 @@ interface SpreadListProps {
 }
 
 export function SpreadList({ draft, dispatch, currentSpreadId, onSelectSpread, onAddSpread, onUndo }: SpreadListProps) {
+  const { t } = useI18n();
   const headingId = useId();
   const listRef = useRef<HTMLOListElement>(null);
   const undoRef = useRef<HTMLButtonElement>(null);
@@ -74,10 +76,10 @@ export function SpreadList({ draft, dispatch, currentSpreadId, onSelectSpread, o
     <section className={styles.pages} aria-labelledby={headingId}>
       <div className={styles.header}>
         <h2 id={headingId} className={styles.heading}>
-          Pages
+          {t.spreads.heading}
         </h2>
         <p className={styles.count}>
-          {spreads.length} {spreads.length === 1 ? 'spread' : 'spreads'} · {pageCount} printed pages
+          {t.spreads.count(spreads.length, pageCount)}
         </p>
       </div>
       <ol ref={listRef} className={styles.list}>
@@ -97,14 +99,14 @@ export function SpreadList({ draft, dispatch, currentSpreadId, onSelectSpread, o
       </ol>
       {deleted && deleted.spreadsAfter === spreads && (
         <div role="status" className={styles.notice}>
-          Spread {deleted.number} deleted.
+          {t.spreads.deleted(deleted.number)}
           <button
             ref={undoRef}
             type="button"
             className={styles.button}
             onClick={() => undoDelete(deleted.spreadId)}
           >
-            Undo
+            {t.common.undo}
           </button>
         </div>
       )}
@@ -116,7 +118,7 @@ export function SpreadList({ draft, dispatch, currentSpreadId, onSelectSpread, o
           if (spreads.length < MAX_SPREADS) onAddSpread();
         }}
       >
-        Add spread
+        {t.spreads.add}
       </button>
     </section>
   );
