@@ -115,6 +115,16 @@ describe('Editor', () => {
     expect(summary).toHaveTextContent('Gift message page: included');
   });
 
+  it('restores a message removed right after typing it with one Undo', async () => {
+    renderEditor();
+    const field = screen.getByRole('textbox', { name: 'Your message' });
+    await userEvent.type(field, 'With love');
+    await userEvent.click(screen.getByRole('button', { name: 'Remove gift message' }));
+    expect(field).toHaveValue('');
+    await userEvent.click(screen.getByRole('button', { name: 'Undo' }));
+    expect(field).toHaveValue('With love');
+  });
+
   it('starts a project with no saved draft as a new book named after it', () => {
     renderEditor(createProjectDraftStorage(project, memoryStorage({ status: 'empty' })));
     expect(screen.getByRole('heading', { level: 1, name: 'Summer in Maine' })).toBeInTheDocument();

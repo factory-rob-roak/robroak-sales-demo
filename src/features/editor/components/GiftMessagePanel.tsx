@@ -41,7 +41,7 @@ export function GiftMessagePanel({ draft, dispatch }: GiftMessagePanelProps) {
   };
 
   const remove = () => {
-    dispatch({ type: 'setGiftMessage', message: '' });
+    dispatch({ type: 'removeGiftMessage' });
     setNotice('Gift message removed.');
     fieldRef.current?.focus();
   };
