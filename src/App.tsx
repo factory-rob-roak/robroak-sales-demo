@@ -3,8 +3,10 @@ import styles from './App.module.css';
 import { ProjectCard } from './components/ProjectCard';
 import { sampleProjects } from './data/sampleProjects';
 import { Editor } from './features/editor/Editor';
+import { useI18n } from './i18n/useI18n';
 
 export function App() {
+  const { t } = useI18n();
   const [openProjectId, setOpenProjectId] = useState<string | null>(null);
   const [returnedFromEditor, setReturnedFromEditor] = useState(false);
   const headingRef = useRef<HTMLHeadingElement>(null);
@@ -30,9 +32,9 @@ export function App() {
   return (
     <main className={styles.page}>
       <h1 ref={headingRef} tabIndex={-1}>
-        Your photo books
+        {t.projects.heading}
       </h1>
-      <section className={styles.grid} aria-label="Projects">
+      <section className={styles.grid} aria-label={t.projects.listLabel}>
         {sampleProjects.map((project) => (
           <ProjectCard key={project.id} project={project} onOpen={setOpenProjectId} />
         ))}

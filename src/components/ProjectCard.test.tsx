@@ -18,6 +18,7 @@ it('shows the project details and price', () => {
   expect(screen.getByRole('heading', { name: 'Summer in Maine' })).toBeInTheDocument();
   expect(screen.getByText(/11x8.5 Landscape · Hardcover · 24/)).toBeInTheDocument();
   expect(screen.getByText('$65.99')).toBeInTheDocument();
+  expect(screen.getByText('Edited Nov 1, 2026')).toHaveAttribute('datetime', '2026-11-01T12:00:00Z');
 });
 
 it('opens the project from the keyboard', async () => {
