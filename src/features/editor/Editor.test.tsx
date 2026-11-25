@@ -1,6 +1,6 @@
 import { fireEvent, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import type { Project } from '../../types';
 import { createProjectDraftStorage } from './components/projectDraftStorage';
 import { Editor } from './Editor';
@@ -91,6 +91,28 @@ describe('Editor', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Add spread' }));
     await userEvent.click(screen.getByRole('button', { name: 'Undo' }));
     expect(screen.getByRole('heading', { name: 'Spread 1 of 2' })).toBeInTheDocument();
+  });
+
+  it('adds a free gift message page that shows in the order summary and is saved', async () => {
+    const save = vi.fn<DraftStorage['save']>(() => ({ ok: true }));
+    const { unmount } = renderEditor({ load: () => ({ status: 'loaded', draft: saved }), save });
+    await userEvent.type(screen.getByRole('textbox', { name: 'Your message' }), 'With love');
+    const summary = screen.getByRole('region', { name: 'Order summary' });
+    expect(summary).toHaveTextContent('Gift message page: included');
+    expect(summary).toHaveTextContent('4 pages');
+    unmount();
+    expect(save).toHaveBeenLastCalledWith({ ...saved, giftMessage: 'With love' });
+  });
+
+  it('removes the gift message page and brings it back with Undo', async () => {
+    renderEditor(memoryStorage({ status: 'loaded', draft: { ...saved, giftMessage: 'With love' } }));
+    const summary = screen.getByRole('region', { name: 'Order summary' });
+    await userEvent.click(screen.getByRole('button', { name: 'Remove gift message' }));
+    expect(screen.getByRole('textbox', { name: 'Your message' })).toHaveValue('');
+    expect(summary).not.toHaveTextContent('Gift message page');
+    await userEvent.click(screen.getByRole('button', { name: 'Undo' }));
+    expect(screen.getByRole('textbox', { name: 'Your message' })).toHaveValue('With love');
+    expect(summary).toHaveTextContent('Gift message page: included');
   });
 
   it('starts a project with no saved draft as a new book named after it', () => {
