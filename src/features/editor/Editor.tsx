@@ -7,6 +7,7 @@ import { PhotoTray } from './components/PhotoTray';
 import { createProjectDraftStorage } from './components/projectDraftStorage';
 import { SpreadList } from './components/SpreadList';
 import { handleUndoShortcut } from './components/undoShortcuts';
+import { useDocumentTitle } from './components/useDocumentTitle';
 import { useTrayUploads } from './components/useTrayUploads';
 import { PAGES_PER_SPREAD } from './constants';
 import styles from './Editor.module.css';
@@ -31,6 +32,7 @@ export function Editor({ project, onClose, storage }: EditorProps) {
   const [selectedPhotoId, setSelectedPhotoId] = useState<string | null>(null);
   const [selectNewSpreadAfter, setSelectNewSpreadAfter] = useState<number | null>(null);
   const rootRef = useRef<HTMLDivElement>(null);
+  useDocumentTitle(`${draft.title.trim() || 'Untitled book'} · Photo Books`);
 
   // Opening the editor replaces the whole page, so move focus to its heading.
   useEffect(() => {

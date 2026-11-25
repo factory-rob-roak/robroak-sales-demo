@@ -101,6 +101,6 @@
 .link:focus-visible,
 .order:focus-visible,
 .secondary:focus-visible {
-  outline: 3px solid #f2b84b;
+  outline: 3px solid #1d5fbf;
   outline-offset: 2px;
 }

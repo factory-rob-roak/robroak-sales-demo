@@ -1,7 +1,9 @@
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
+import { contrastRatio, declarations, outlineColor, parseHex } from '../../../test/contrast';
 import { OrderSummary, type OrderSummaryProps } from './OrderSummary';
+import css from './OrderSummary.module.css?raw';
 
 const book: OrderSummaryProps = {
   format: 'landscape-11',
@@ -154,4 +156,11 @@ describe('OrderSummary ordering', () => {
     rerender(<OrderSummary {...book} />);
     expect(status()).toHaveTextContent('Ready to order');
   });
+  it.each(['.link:focus-visible', '.order:focus-visible', '.secondary:focus-visible'])(
+    'draws the %s ring with 3:1 contrast against the summary (WCAG 1.4.11)',
+    (selector) => {
+      const summaryBg = parseHex(declarations(css, '.summary').background ?? '');
+      expect(contrastRatio(outlineColor(css, selector), summaryBg)).toBeGreaterThanOrEqual(3);
+    },
+  );
 });

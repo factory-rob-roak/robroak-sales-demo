@@ -104,4 +104,13 @@ describe('Editor', () => {
     const { container } = renderEditor();
     expect(await axeViolations(container)).toEqual([]);
   });
+  it('names the browser tab after the book and restores it on close (WCAG 2.4.2)', async () => {
+    document.title = 'Photo Books';
+    const { unmount } = renderEditor();
+    expect(document.title).toBe('Lake week · Photo Books');
+    await userEvent.clear(screen.getByRole('textbox', { name: 'Title' }));
+    expect(document.title).toBe('Untitled book · Photo Books');
+    unmount();
+    expect(document.title).toBe('Photo Books');
+  });
 });
