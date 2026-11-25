@@ -133,4 +133,25 @@ describe('OrderSummary ordering', () => {
     rerender(<OrderSummary {...book} pageCount={32} />);
     expect(status()).toBeEmptyDOMElement();
   });
+
+  it('keeps the ready state cleared when the book changes back', async () => {
+    const { rerender } = await renderAndOrder();
+    rerender(<OrderSummary {...book} pageCount={32} />);
+    rerender(<OrderSummary {...book} />);
+    expect(status()).toBeEmptyDOMElement();
+  });
+
+  it('keeps the empty-spread warning dismissed when the book changes back', async () => {
+    const { rerender } = await renderAndOrder({ emptySpreadCount: 1 });
+    rerender(<OrderSummary {...book} emptySpreadCount={0} />);
+    rerender(<OrderSummary {...book} emptySpreadCount={1} />);
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+  });
+
+  // Captions, photo swaps, layouts, theme and title don't change the price or the checks.
+  it('keeps the ready state through edits that leave the price and checks unchanged', async () => {
+    const { rerender } = await renderAndOrder();
+    rerender(<OrderSummary {...book} />);
+    expect(status()).toHaveTextContent('Ready to order');
+  });
 });

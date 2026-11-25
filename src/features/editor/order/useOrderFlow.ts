@@ -14,8 +14,14 @@ export function useOrderFlow({ canOrder, emptySpreadCount, ...spec }: OrderFlowI
     step: 'idle',
     bookKey,
   });
-  // An order attempt only applies to the book as it was; any edit starts over.
-  const step = state.bookKey === bookKey ? state.step : 'idle';
+  let step = state.step;
+  // An order attempt only applies to the book as it was when the user pressed Order.
+  // Reset the stored state, not just the derived step, so changing the book back
+  // (add a spread, then delete it) does not bring back a stale confirmation.
+  if (state.bookKey !== bookKey) {
+    step = 'idle';
+    setState({ step, bookKey });
+  }
   const goTo = (next: OrderStep) => setState({ step: next, bookKey });
 
   return {
