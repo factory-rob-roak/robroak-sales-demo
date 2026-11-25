@@ -1,4 +1,4 @@
-import { useRef, useState, type DragEvent } from 'react';
+import { memo, useRef, useState, type DragEvent } from 'react';
 import type { Photo } from '../types';
 import { cx } from './classNames';
 import styles from './PageSlot.module.css';
@@ -10,8 +10,9 @@ interface PageSlotProps {
   /** The photo chosen in the tray for tap or keyboard placement. */
   selectedPhoto: Photo | null;
   hintId: string;
-  onPlace: (photoId: string) => void;
-  onRemove: () => void;
+  /** Called with this slot's index, so one stable callback can serve every slot. */
+  onPlace: (index: number, photoId: string) => void;
+  onRemove: (index: number) => void;
   onReAdd: (photoId: string) => void;
 }
 
@@ -21,7 +22,15 @@ function describe(photo: Photo | null): string {
   return photo.alt || photo.name;
 }
 
-export function PageSlot({ index, photo, selectedPhoto, hintId, onPlace, onRemove, onReAdd }: PageSlotProps) {
+export const PageSlot = memo(function PageSlot({
+  index,
+  photo,
+  selectedPhoto,
+  hintId,
+  onPlace,
+  onRemove,
+  onReAdd,
+}: PageSlotProps) {
   const [dragOver, setDragOver] = useState(false);
   const targetRef = useRef<HTMLButtonElement>(null);
   const number = index + 1;
@@ -47,7 +56,7 @@ export function PageSlot({ index, photo, selectedPhoto, hintId, onPlace, onRemov
     const photoId = readPhotoDragData(event.dataTransfer);
     if (photoId === null) return;
     event.preventDefault();
-    onPlace(photoId);
+    onPlace(index, photoId);
   };
 
   return (
@@ -65,7 +74,7 @@ export function PageSlot({ index, photo, selectedPhoto, hintId, onPlace, onRemov
         aria-describedby={hintId}
         aria-disabled={selectedPhoto === null}
         onClick={() => {
-          if (selectedPhoto) onPlace(selectedPhoto.id);
+          if (selectedPhoto) onPlace(index, selectedPhoto.id);
         }}
       >
         {photo && !photo.missing ? (
@@ -90,7 +99,7 @@ export function PageSlot({ index, photo, selectedPhoto, hintId, onPlace, onRemov
           className={styles.remove}
           aria-label={`Remove photo from slot ${number}`}
           onClick={() => {
-            onRemove();
+            onRemove(index);
             // The remove button unmounts with the photo, so keep keyboard focus on the emptied slot.
             targetRef.current?.focus();
           }}
@@ -100,4 +109,4 @@ export function PageSlot({ index, photo, selectedPhoto, hintId, onPlace, onRemov
       )}
     </div>
   );
-}
+});

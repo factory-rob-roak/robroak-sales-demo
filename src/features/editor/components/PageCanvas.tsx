@@ -1,7 +1,7 @@
-import { useId, useState } from 'react';
+import { memo, useCallback, useId, useMemo, useState } from 'react';
 import type { BookFormat } from '../../../types';
 import { visibleSlots } from '../editorReducer';
-import type { BookDraft, EditorAction, LayoutId } from '../types';
+import type { EditorAction, LayoutId, Photo, Spread, ThemeId } from '../types';
 import { cx } from './classNames';
 import { LayoutPicker } from './LayoutPicker';
 import styles from './PageCanvas.module.css';
@@ -24,9 +24,17 @@ const LAYOUT_CLASS: Record<LayoutId, string | undefined> = {
   collage: styles.layoutCollage,
 };
 
+/**
+ * Takes the parts of the draft it shows rather than the whole draft, so edits elsewhere
+ * (title, settings, other spreads) and autosave status changes do not re-render it.
+ */
 interface PageCanvasProps {
-  draft: BookDraft;
+  spread: Spread;
   spreadIndex: number;
+  spreadCount: number;
+  photos: Photo[];
+  theme: ThemeId;
+  format: BookFormat;
   dispatch: (action: EditorAction) => void;
   /** Photo chosen in the tray for tap or keyboard placement, if any. */
   selectedPhotoId: string | null;
@@ -34,9 +42,13 @@ interface PageCanvasProps {
   onReAddPhoto: (photoId: string) => void;
 }
 
-export function PageCanvas({
-  draft,
+export const PageCanvas = memo(function PageCanvas({
+  spread,
   spreadIndex,
+  spreadCount,
+  photos,
+  theme,
+  format,
   dispatch,
   selectedPhotoId,
   onPhotoPlaced,
@@ -46,27 +58,33 @@ export function PageCanvas({
   const [announcement, setAnnouncement] = useState('');
   const headingId = useId();
   const hintId = useId();
-  const spread = draft.spreads[spreadIndex];
-  if (!spread) return null;
+  const spreadId = spread.id;
 
-  const photoById = new Map(draft.photos.map((photo) => [photo.id, photo]));
+  const photoById = useMemo(() => new Map(photos.map((photo) => [photo.id, photo])), [photos]);
   const selectedPhoto = (selectedPhotoId && photoById.get(selectedPhotoId)) || null;
 
-  const place = (slot: number, photoId: string) => {
-    dispatch({ type: 'placePhoto', target: { spreadId: spread.id, slot }, photoId });
-    onPhotoPlaced();
-    const photo = photoById.get(photoId);
-    if (photo) setAnnouncement(`Placed ${photo.alt || photo.name} in slot ${slot + 1}.`);
-  };
+  const place = useCallback(
+    (slot: number, photoId: string) => {
+      dispatch({ type: 'placePhoto', target: { spreadId, slot }, photoId });
+      onPhotoPlaced();
+      const photo = photoById.get(photoId);
+      if (photo) setAnnouncement(`Placed ${photo.alt || photo.name} in slot ${slot + 1}.`);
+    },
+    [dispatch, onPhotoPlaced, photoById, spreadId],
+  );
+  const remove = useCallback(
+    (slot: number) => dispatch({ type: 'removePhoto', target: { spreadId, slot } }),
+    [dispatch, spreadId],
+  );
 
   return (
-    <section className={cx(styles.canvas, THEME_CLASS[draft.theme])} aria-labelledby={headingId}>
+    <section className={cx(styles.canvas, THEME_CLASS[theme])} aria-labelledby={headingId}>
       <h2 id={headingId} className={styles.heading}>
-        Spread {spreadIndex + 1} of {draft.spreads.length}
+        Spread {spreadIndex + 1} of {spreadCount}
       </h2>
       <LayoutPicker
         layout={spread.layout}
-        onChange={(layout) => dispatch({ type: 'setLayout', spreadId: spread.id, layout })}
+        onChange={(layout) => dispatch({ type: 'setLayout', spreadId, layout })}
       />
       <p id={hintId} className={styles.hint}>
         {selectedPhoto
@@ -75,7 +93,7 @@ export function PageCanvas({
       </p>
       <div className={styles.viewport}>
         <div
-          className={cx(styles.spread, FORMAT_CLASS[draft.format], LAYOUT_CLASS[spread.layout])}
+          className={cx(styles.spread, FORMAT_CLASS[format], LAYOUT_CLASS[spread.layout])}
           style={{ width: `calc(min(100%, 48rem) * ${zoomPercent / 100})` }}
         >
           {visibleSlots(spread).map((photoId, slot) => (
@@ -85,8 +103,8 @@ export function PageCanvas({
               photo={(photoId && photoById.get(photoId)) || null}
               selectedPhoto={selectedPhoto}
               hintId={hintId}
-              onPlace={(id) => place(slot, id)}
-              onRemove={() => dispatch({ type: 'removePhoto', target: { spreadId: spread.id, slot } })}
+              onPlace={place}
+              onRemove={remove}
               onReAdd={onReAddPhoto}
             />
           ))}
@@ -98,9 +116,7 @@ export function PageCanvas({
           className={styles.captionInput}
           value={spread.caption}
           placeholder="Add a caption"
-          onChange={(event) =>
-            dispatch({ type: 'setCaption', spreadId: spread.id, caption: event.target.value })
-          }
+          onChange={(event) => dispatch({ type: 'setCaption', spreadId, caption: event.target.value })}
         />
       </label>
       <ZoomControls zoomPercent={zoomPercent} onZoomChange={setZoomPercent} />
@@ -109,4 +125,4 @@ export function PageCanvas({
       </p>
     </section>
   );
-}
+});

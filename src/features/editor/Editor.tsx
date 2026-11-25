@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import type { Project } from '../../types';
 import { BookSettings } from './components/BookSettings';
 import { EditorToolbar } from './components/EditorToolbar';
@@ -31,6 +31,7 @@ export function Editor({ project, onClose, storage }: EditorProps) {
   const [selectedPhotoId, setSelectedPhotoId] = useState<string | null>(null);
   const [selectNewSpreadAfter, setSelectNewSpreadAfter] = useState<number | null>(null);
   const rootRef = useRef<HTMLDivElement>(null);
+  const clearSelectedPhoto = useCallback(() => setSelectedPhotoId(null), []);
 
   // Opening the editor replaces the whole page, so move focus to its heading.
   useEffect(() => {
@@ -45,7 +46,8 @@ export function Editor({ project, onClose, storage }: EditorProps) {
   // Undo or redo can remove the current spread; fall back to the first one.
   const found = draft.spreads.findIndex((spread) => spread.id === currentSpreadId);
   const spreadIndex = Math.max(0, found);
-  const currentId = draft.spreads[spreadIndex]?.id ?? '';
+  const currentSpread = draft.spreads[spreadIndex];
+  const currentId = currentSpread?.id ?? '';
   const emptySpreadCount = draft.spreads.filter((spread) =>
     visibleSlots(spread).every((photoId) => photoId === null),
   ).length;
@@ -72,14 +74,20 @@ export function Editor({ project, onClose, storage }: EditorProps) {
           />
         </div>
         <main className={styles.canvas}>
-          <PageCanvas
-            draft={draft}
-            spreadIndex={spreadIndex}
-            dispatch={dispatch}
-            selectedPhotoId={selectedPhotoId}
-            onPhotoPlaced={() => setSelectedPhotoId(null)}
-            onReAddPhoto={uploads.reAddPhoto}
-          />
+          {currentSpread && (
+            <PageCanvas
+              spread={currentSpread}
+              spreadIndex={spreadIndex}
+              spreadCount={draft.spreads.length}
+              photos={draft.photos}
+              theme={draft.theme}
+              format={draft.format}
+              dispatch={dispatch}
+              selectedPhotoId={selectedPhotoId}
+              onPhotoPlaced={clearSelectedPhoto}
+              onReAddPhoto={uploads.reAddPhoto}
+            />
+          )}
         </main>
         <div className={styles.side}>
           <SpreadList
