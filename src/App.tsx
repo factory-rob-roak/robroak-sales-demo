@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import styles from './App.module.css';
 import { ProjectCard } from './components/ProjectCard';
 import { sampleProjects } from './data/sampleProjects';
-import { Editor } from './features/editor/Editor';
+import { LazyEditor } from './features/editor/LazyEditor';
 
 export function App() {
   const [openProjectId, setOpenProjectId] = useState<string | null>(null);
@@ -16,7 +16,7 @@ export function App() {
 
   if (openProject) {
     return (
-      <Editor
+      <LazyEditor
         key={openProject.id}
         project={openProject}
         onClose={() => {

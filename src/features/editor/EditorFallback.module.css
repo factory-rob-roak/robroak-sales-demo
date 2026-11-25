@@ -1,0 +1,39 @@
+.page {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 1rem;
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 2rem 1rem;
+  font-family: system-ui, sans-serif;
+  color: #2b2823;
+}
+
+.heading {
+  margin: 0;
+  font-size: 1.5rem;
+}
+
+.message {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.heading:focus-visible,
+.message:focus-visible,
+.button:focus-visible {
+  outline: 3px solid #1d5fbf;
+  outline-offset: 2px;
+}
+
+.button {
+  min-height: 44px;
+  padding: 0 0.875rem;
+  border: 1px solid #b9b3a8;
+  border-radius: 6px;
+  background: #fff;
+  color: #2b2823;
+  font: inherit;
+  cursor: pointer;
+}
