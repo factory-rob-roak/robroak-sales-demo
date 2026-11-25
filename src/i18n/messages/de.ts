@@ -91,6 +91,7 @@ export const de: Messages = {
   toolbar: {
     back: 'Zurück zu den Projekten',
     untitled: 'Unbenanntes Buch',
+    language: 'Sprache',
     history: 'Verlauf',
     save: {
       saved: 'Alle Änderungen auf diesem Gerät gespeichert',

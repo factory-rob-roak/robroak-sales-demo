@@ -92,6 +92,7 @@ export const en = {
   toolbar: {
     back: 'Back to projects',
     untitled: 'Untitled book',
+    language: 'Language',
     history: 'History',
     save: {
       saved: 'All changes saved on this device',
