@@ -15,19 +15,23 @@ interface PageSlotProps {
   onReAdd: (photoId: string) => void;
 }
 
-function describe(photo: Photo | null): string {
-  if (photo === null) return 'empty';
-  if (photo.missing) return `${photo.name} (missing)`;
-  return photo.alt || photo.name;
+const EMPTY_TEXT = 'Drop a photo here';
+const MISSING_TEXT = 'Photo missing';
+
+/**
+ * Includes the slot's visible text so speech users can name it (WCAG 2.5.3).
+ * The selected photo is announced through the aria-describedby hint.
+ */
+function slotLabel(number: number, photo: Photo | null): string {
+  if (photo === null) return `Slot ${number}: ${EMPTY_TEXT}`;
+  if (photo.missing) return `Slot ${number}: ${MISSING_TEXT}, ${photo.name}`;
+  return `Slot ${number}: ${photo.alt || photo.name}`;
 }
 
 export function PageSlot({ index, photo, selectedPhoto, hintId, onPlace, onRemove, onReAdd }: PageSlotProps) {
   const [dragOver, setDragOver] = useState(false);
   const targetRef = useRef<HTMLButtonElement>(null);
   const number = index + 1;
-  const label = selectedPhoto
-    ? `Place ${describe(selectedPhoto)} in slot ${number}`
-    : `Slot ${number}: ${describe(photo)}`;
 
   const handleDragOver = (event: DragEvent<HTMLDivElement>) => {
     if (!isPhotoDrag(event.dataTransfer)) return;
@@ -61,7 +65,7 @@ export function PageSlot({ index, photo, selectedPhoto, hintId, onPlace, onRemov
         ref={targetRef}
         type="button"
         className={styles.target}
-        aria-label={label}
+        aria-label={slotLabel(number, photo)}
         aria-describedby={hintId}
         aria-disabled={selectedPhoto === null}
         onClick={() => {
@@ -71,7 +75,7 @@ export function PageSlot({ index, photo, selectedPhoto, hintId, onPlace, onRemov
         {photo && !photo.missing ? (
           <img className={styles.image} src={photo.url} alt={photo.alt} draggable={false} />
         ) : (
-          <span className={styles.placeholder}>{photo ? 'Photo missing' : 'Drop a photo here'}</span>
+          <span className={styles.placeholder}>{photo ? MISSING_TEXT : EMPTY_TEXT}</span>
         )}
       </button>
       {photo?.missing && (

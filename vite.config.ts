@@ -6,6 +6,8 @@ export default defineConfig({
   test: {
     environment: 'jsdom',
     setupFiles: ['./src/test/setup.ts'],
+    // Lets contrast tests read stylesheet source; CSS Modules stay unprocessed otherwise.
+    css: { include: [/\.module\.css\?raw$/] },
     include: ['src/**/*.test.{ts,tsx}'],
   },
 });
