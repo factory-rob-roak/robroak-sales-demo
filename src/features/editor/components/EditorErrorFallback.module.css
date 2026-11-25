@@ -1,0 +1,50 @@
+.page {
+  max-width: 40rem;
+  margin: 0 auto;
+  padding: 4rem 1rem;
+  color: #2b2823;
+  font-family: system-ui, sans-serif;
+}
+
+.heading {
+  margin: 0 0 1rem;
+  font-size: 1.75rem;
+}
+
+.heading:focus-visible {
+  outline: 3px solid #1d5fbf;
+  outline-offset: 4px;
+}
+
+.message {
+  margin: 0 0 1.5rem;
+  line-height: 1.5;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.button {
+  min-height: 44px;
+  padding: 0 1rem;
+  border: 1px solid #b9b3a8;
+  border-radius: 6px;
+  background: #fff;
+  color: #2b2823;
+  font: inherit;
+  cursor: pointer;
+}
+
+.primary {
+  border-color: #1d5fbf;
+  background: #1d5fbf;
+  color: #fff;
+}
+
+.button:focus-visible {
+  outline: 3px solid #1d5fbf;
+  outline-offset: 2px;
+}
