@@ -99,4 +99,19 @@ describe('Editor', () => {
     expect(screen.getByRole('combobox', { name: 'Cover' })).toHaveDisplayValue('Hardcover');
     expect(screen.getByRole('heading', { name: 'Spread 1 of 2' })).toBeInTheDocument();
   });
+  it('keeps focus in the editor when undo removes the focused control', async () => {
+    const slot2 = /^(Slot 2:|Place .+ in slot 2$)/;
+    const user = userEvent.setup();
+    renderEditor();
+    const photos = within(screen.getByRole('list', { name: 'Photo library' }));
+    await user.click(photos.getByRole('button', { name: 'Dog in the waves' }));
+    await user.click(screen.getByRole('button', { name: slot2 }));
+    screen.getByRole('button', { name: 'Remove photo from slot 2' }).focus();
+    await user.keyboard('{Control>}z{/Control}');
+    expect(screen.queryByRole('button', { name: 'Remove photo from slot 2' })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: slot2 })).toHaveFocus();
+    // Shortcuts keep working because focus is still inside the editor.
+    await user.keyboard('{Control>}{Shift>}z{/Shift}{/Control}');
+    expect(screen.getByRole('button', { name: 'Slot 2: Dog in the waves' })).toBeInTheDocument();
+  });
 });
