@@ -1,3 +1,5 @@
+import { createStubLogger } from '../../api/createStubLogger';
+import type { Logger } from '../../api/logger';
 import { COVER_LABELS, FORMAT_LABELS } from '../../types';
 import { LAYOUT_SLOT_COUNT, MAX_SLOTS, MAX_SPREADS, THEMES } from './constants';
 import type { BookDraft, Photo, Spread, ThemeId } from './types';
@@ -29,6 +31,8 @@ export interface DraftStorageOptions {
   key?: string;
   version?: number;
   migrations?: Readonly<Record<number, Migration>>;
+  /** Receives read and write failures. Never receives draft content. */
+  logger?: Logger;
 }
 
 /** Reading `window.localStorage` itself throws in some privacy modes. */
@@ -119,7 +123,11 @@ export function createDraftStorage({
   key = STORAGE_KEY,
   version = STORAGE_VERSION,
   migrations = MIGRATIONS,
+  logger = createStubLogger(),
 }: DraftStorageOptions = {}): DraftStorage {
+  // Autosave retries on every edit, so only the first failure in a row is reported.
+  let saveFailing = false;
+
   function migrate(saved: number, data: unknown): unknown {
     let current = data;
     for (let v = saved; v < version; v++) {
@@ -130,39 +138,62 @@ export function createDraftStorage({
     return current;
   }
 
+  function unreadable(status: 'invalid' | 'unavailable', reason: string, error?: unknown): LoadResult {
+    logger[status === 'invalid' ? 'error' : 'warn']('Saved draft could not be read', { reason }, error);
+    return { status };
+  }
+
+  function parseEnvelope(raw: string): LoadResult {
+    let envelope: unknown;
+    try {
+      envelope = JSON.parse(raw);
+    } catch {
+      // The parser's message quotes the saved text, which is user content.
+      return unreadable('invalid', 'bad-json');
+    }
+    if (!isRecord(envelope)) return unreadable('invalid', 'bad-envelope');
+    const saved = envelope.version;
+    if (typeof saved !== 'number' || !Number.isInteger(saved) || saved < 1 || saved > version) {
+      return unreadable('invalid', 'bad-version');
+    }
+    let migrated: unknown;
+    try {
+      migrated = migrate(saved, envelope.draft);
+    } catch (error) {
+      return unreadable('invalid', 'migration-failed', error);
+    }
+    const draft = parseDraft(migrated);
+    return draft === null ? unreadable('invalid', 'bad-draft') : { status: 'loaded', draft };
+  }
+
+  function write(draft: BookDraft): SaveResult {
+    if (storage === null) return { ok: false, reason: 'unavailable' };
+    try {
+      storage.setItem(key, JSON.stringify({ version, draft }));
+      return { ok: true };
+    } catch (error) {
+      const reason = isQuotaError(error) ? 'quota' : 'unavailable';
+      if (!saveFailing) logger.error('Draft could not be saved', { reason }, error);
+      return { ok: false, reason };
+    }
+  }
+
   return {
     load() {
-      if (storage === null) return { status: 'unavailable' };
+      if (storage === null) return unreadable('unavailable', 'no-storage');
       let raw: string | null;
       try {
         raw = storage.getItem(key);
-      } catch {
-        return { status: 'unavailable' };
+      } catch (error) {
+        return unreadable('unavailable', 'read-failed', error);
       }
-      if (raw === null) return { status: 'empty' };
-      try {
-        const envelope: unknown = JSON.parse(raw);
-        if (!isRecord(envelope)) return { status: 'invalid' };
-        const saved = envelope.version;
-        if (typeof saved !== 'number' || !Number.isInteger(saved) || saved < 1 || saved > version) {
-          return { status: 'invalid' };
-        }
-        const draft = parseDraft(migrate(saved, envelope.draft));
-        return draft === null ? { status: 'invalid' } : { status: 'loaded', draft };
-      } catch {
-        // Bad JSON, or a migration that threw.
-        return { status: 'invalid' };
-      }
+      return raw === null ? { status: 'empty' } : parseEnvelope(raw);
     },
 
     save(draft) {
-      if (storage === null) return { ok: false, reason: 'unavailable' };
-      try {
-        storage.setItem(key, JSON.stringify({ version, draft }));
-        return { ok: true };
-      } catch (error) {
-        return { ok: false, reason: isQuotaError(error) ? 'quota' : 'unavailable' };
-      }
+      const result = write(draft);
+      saveFailing = !result.ok;
+      return result;
     },
   };
 }

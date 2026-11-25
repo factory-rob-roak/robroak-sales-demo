@@ -1,6 +1,9 @@
 import { fireEvent, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
+import { createStubLogger } from '../../api/createStubLogger';
+import type { LogEntry } from '../../api/logger';
+import { LoggerProvider } from '../../api/LoggerProvider';
 import type { Project } from '../../types';
 import { createProjectDraftStorage } from './components/projectDraftStorage';
 import { Editor } from './Editor';
@@ -93,10 +96,29 @@ describe('Editor', () => {
   });
 
   it('starts a project with no saved draft as a new book named after it', () => {
-    renderEditor(createProjectDraftStorage(project, memoryStorage({ status: 'empty' })));
+    renderEditor(createProjectDraftStorage(project, { storage: memoryStorage({ status: 'empty' }) }));
     expect(screen.getByRole('heading', { level: 1, name: 'Summer in Maine' })).toBeInTheDocument();
     expect(screen.getByRole('combobox', { name: 'Size' })).toHaveDisplayValue('11x8.5 Landscape');
     expect(screen.getByRole('combobox', { name: 'Cover' })).toHaveDisplayValue('Hardcover');
     expect(screen.getByRole('heading', { name: 'Spread 1 of 2' })).toBeInTheDocument();
+  });
+
+  it('logs an unreadable saved draft with the project id and opens a new book', () => {
+    localStorage.setItem('photo-book-editor:draft:p1', '{not json');
+    const entries: LogEntry[] = [];
+    render(
+      <LoggerProvider logger={createStubLogger({ onEntry: (entry) => entries.push(entry) })}>
+        <Editor project={project} onClose={() => {}} />
+      </LoggerProvider>,
+    );
+    expect(screen.getByRole('heading', { level: 1, name: 'Summer in Maine' })).toBeInTheDocument();
+    expect(entries).toEqual([
+      expect.objectContaining({
+        level: 'error',
+        message: 'Saved draft could not be read',
+        context: { projectId: 'p1', reason: 'bad-json' },
+      }),
+    ]);
+    localStorage.clear();
   });
 });

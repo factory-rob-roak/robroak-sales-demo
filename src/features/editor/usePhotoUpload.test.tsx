@@ -1,7 +1,10 @@
 import { act, renderHook, waitFor } from '@testing-library/react';
 import type { ReactNode } from 'react';
 import { describe, expect, it } from 'vitest';
+import { createStubLogger } from '../../api/createStubLogger';
 import { createStubPhotoUploadClient } from '../../api/createStubPhotoUploadClient';
+import type { LogEntry } from '../../api/logger';
+import { LoggerProvider } from '../../api/LoggerProvider';
 import { PhotoUploadProvider } from '../../api/PhotoUploadProvider';
 import { PhotoUploadError, type PhotoUploadClient, type UploadedPhoto } from '../../api/photoUpload';
 import { usePhotoUpload } from './usePhotoUpload';
@@ -24,9 +27,12 @@ function controllableClient() {
   return { client, pending };
 }
 
-function renderWithClient(client: PhotoUploadClient) {
+function renderWithClient(client: PhotoUploadClient, entries: LogEntry[] = []) {
+  const logger = createStubLogger({ onEntry: (entry) => entries.push(entry) });
   const wrapper = ({ children }: { children: ReactNode }) => (
-    <PhotoUploadProvider client={client}>{children}</PhotoUploadProvider>
+    <LoggerProvider logger={logger}>
+      <PhotoUploadProvider client={client}>{children}</PhotoUploadProvider>
+    </LoggerProvider>
   );
   return renderHook(() => usePhotoUpload(), { wrapper });
 }
@@ -89,9 +95,49 @@ describe('usePhotoUpload', () => {
     expect(result.current.errors[0]).toMatchObject({ fileName: 'a.jpg', code: 'network' });
   });
 
+  it('logs expected failures as warnings without the file name', async () => {
+    const entries: LogEntry[] = [];
+    const client = createStubPhotoUploadClient({ latencyMs: 0 });
+    const { result } = renderWithClient(client, entries);
+
+    await act(async () => {
+      await result.current.uploadFiles([file('passport-scan.txt', 'text/plain')]);
+    });
+
+    expect(entries).toEqual([
+      expect.objectContaining({
+        level: 'warn',
+        message: 'Photo upload failed',
+        context: { code: 'unsupported-type', fileType: 'text/plain', fileSizeBytes: 1 },
+      }),
+    ]);
+    expect(entries[0]?.error).toBeUndefined();
+    expect(JSON.stringify(entries)).not.toContain('passport');
+  });
+
+  it('logs unexpected client errors with the captured error', async () => {
+    const entries: LogEntry[] = [];
+    const client: PhotoUploadClient = { upload: () => Promise.reject(new TypeError('Failed to fetch')) };
+    const { result } = renderWithClient(client, entries);
+
+    await act(async () => {
+      await result.current.uploadFiles([file('a.jpg')]);
+    });
+
+    expect(entries).toEqual([
+      expect.objectContaining({
+        level: 'error',
+        message: 'Photo upload failed unexpectedly',
+        context: { code: 'network', fileType: 'image/jpeg', fileSizeBytes: 1 },
+        error: expect.objectContaining({ name: 'TypeError', message: 'Failed to fetch' }),
+      }),
+    ]);
+  });
+
   it('aborts in-flight uploads on unmount without reporting errors', async () => {
     const { client, pending } = controllableClient();
-    const { result, unmount } = renderWithClient(client);
+    const entries: LogEntry[] = [];
+    const { result, unmount } = renderWithClient(client, entries);
 
     let uploaded: Promise<UploadedPhoto[]> = Promise.resolve([]);
     act(() => {
@@ -104,5 +150,6 @@ describe('usePhotoUpload', () => {
 
     pending.forEach((upload) => upload.reject(new DOMException('Aborted', 'AbortError')));
     await expect(uploaded).resolves.toEqual([]);
+    expect(entries).toEqual([]);
   });
 });
