@@ -1,3 +1,4 @@
+import type { Messages } from '../../../i18n/catalogs';
 import { INCLUDED_PAGES, MAX_PAGES, MIN_PAGES, PricingError, priceBook } from '../../../lib/pricing';
 import type { BookSpec } from '../../../types';
 
@@ -13,10 +14,6 @@ export type OrderQuote =
   | { status: 'too-few-pages'; pagesNeeded: number; minimumCents: number }
   | { status: 'too-many-pages'; pagesOver: number }
   | { status: 'unpriceable'; reason: string };
-
-export function pluralize(count: number, singular: string, plural = `${singular}s`): string {
-  return `${count} ${count === 1 ? singular : plural}`;
-}
 
 // Every amount is a priceBook result or a difference of two, so no price lives here.
 export function quoteBook(spec: BookSpec): OrderQuote {
@@ -54,15 +51,15 @@ export function quoteBook(spec: BookSpec): OrderQuote {
 }
 
 /** Explains why a book cannot be ordered, or returns null when it can. */
-export function describeOrderIssue(quote: OrderQuote): string | null {
+export function describeOrderIssue(quote: OrderQuote, t: Messages['order']): string | null {
   switch (quote.status) {
     case 'priced':
       return null;
     case 'too-few-pages':
-      return `Add ${pluralize(quote.pagesNeeded, 'more page', 'more pages')} to reach the ${MIN_PAGES}-page minimum.`;
+      return t.tooFewPages(quote.pagesNeeded, MIN_PAGES);
     case 'too-many-pages':
-      return `Books can have at most ${MAX_PAGES} pages. Remove ${pluralize(quote.pagesOver, 'page')}.`;
+      return t.tooManyPages(MAX_PAGES, quote.pagesOver);
     case 'unpriceable':
-      return `This book can't be printed yet: ${quote.reason}.`;
+      return t.unpriceable(quote.reason);
   }
 }

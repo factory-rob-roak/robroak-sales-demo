@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, type ChangeEvent, type RefObject } from 'react';
+import { useI18n } from '../../../i18n/useI18n';
 import type { EditorAction } from '../types';
 import { usePhotoUpload, type PhotoUploadFailure } from '../usePhotoUpload';
 import { toEditorPhoto } from './photoFromUpload';
@@ -24,6 +25,7 @@ export interface TrayUploads {
  */
 export function useTrayUploads(dispatch: (action: EditorAction) => void): TrayUploads {
   const { uploadFiles, inProgressCount, errors, dismissError } = usePhotoUpload();
+  const { fallbackAlt } = useI18n().t.tray;
   const createdUrls = useRef(new Set<string>());
   const inputRef = useRef<HTMLInputElement>(null);
   const pendingPhotoId = useRef<string | null>(null);
@@ -50,9 +52,11 @@ export function useTrayUploads(dispatch: (action: EditorAction) => void): TrayUp
   const onAddFiles = useCallback(
     async (files: File[]) => {
       const uploaded = await upload(files);
-      if (uploaded.length > 0) dispatch({ type: 'addPhotos', photos: uploaded.map(toEditorPhoto) });
+      if (uploaded.length > 0) {
+        dispatch({ type: 'addPhotos', photos: uploaded.map((photo) => toEditorPhoto(photo, fallbackAlt)) });
+      }
     },
-    [upload, dispatch],
+    [upload, dispatch, fallbackAlt],
   );
 
   const reAddPhoto = useCallback((photoId: string) => {

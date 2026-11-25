@@ -1,4 +1,5 @@
 import { useId, useRef, type KeyboardEvent } from 'react';
+import { useI18n } from '../../../i18n/useI18n';
 import type { BookDraft, EditorAction } from '../types';
 import { AddPhotosButton } from './AddPhotosButton';
 import styles from './PhotoTray.module.css';
@@ -17,6 +18,7 @@ interface PhotoTrayProps {
 }
 
 export function PhotoTray({ draft, dispatch, selectedPhotoId, onSelectPhoto, uploads }: PhotoTrayProps) {
+  const { t } = useI18n();
   const headingId = useId();
   const addPhotosRef = useRef<HTMLInputElement>(null);
   // Matches autoFill: a photo counts as used while any slot entry holds it, even one hidden by the layout.
@@ -31,7 +33,7 @@ export function PhotoTray({ draft, dispatch, selectedPhotoId, onSelectPhoto, upl
   return (
     <section className={styles.tray} aria-labelledby={headingId} onKeyDown={handleKeyDown}>
       <h2 id={headingId} className={styles.heading}>
-        Photos ({draft.photos.length})
+        {t.tray.heading(draft.photos.length)}
       </h2>
       <AddPhotosButton onFiles={uploads.onAddFiles} inputRef={addPhotosRef} />
       <input
@@ -41,7 +43,7 @@ export function PhotoTray({ draft, dispatch, selectedPhotoId, onSelectPhoto, upl
         accept="image/*"
         tabIndex={-1}
         aria-hidden="true"
-        aria-label="Replacement photo"
+        aria-label={t.tray.replacement}
         onChange={uploads.reAddInput.onChange}
       />
       <UploadStatus
@@ -58,12 +60,12 @@ export function PhotoTray({ draft, dispatch, selectedPhotoId, onSelectPhoto, upl
           if (unusedCount > 0) dispatch({ type: 'autoFill' });
         }}
       >
-        Auto-fill empty slots
+        {t.tray.autoFill}
       </button>
       {draft.photos.length === 0 ? (
-        <p className={styles.empty}>Add photos to start filling your book.</p>
+        <p className={styles.empty}>{t.tray.empty}</p>
       ) : (
-        <ul className={styles.list} aria-label="Photo library">
+        <ul className={styles.list} aria-label={t.tray.library}>
           {draft.photos.map((photo) => (
             <TrayPhoto
               key={photo.id}
@@ -84,9 +86,7 @@ export function PhotoTray({ draft, dispatch, selectedPhotoId, onSelectPhoto, upl
         />
       )}
       <p role="status" className={shared.visuallyHidden}>
-        {selectedPhoto
-          ? `Selected ${selectedPhoto.alt || selectedPhoto.name}. Choose a slot on the page.`
-          : ''}
+        {selectedPhoto ? t.tray.selected(selectedPhoto.alt || selectedPhoto.name) : ''}
       </p>
     </section>
   );

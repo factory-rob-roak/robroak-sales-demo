@@ -1,4 +1,5 @@
 import { useId, type ChangeEvent } from 'react';
+import { useI18n } from '../../../i18n/useI18n';
 import { COVER_LABELS, FORMAT_LABELS, type BookFormat, type CoverType } from '../../../types';
 import { THEMES } from '../constants';
 import type { BookDraft, EditorAction } from '../types';
@@ -20,6 +21,7 @@ function isCoverType(value: string): value is CoverType {
 }
 
 export function BookSettings({ draft, dispatch }: BookSettingsProps) {
+  const { t } = useI18n();
   const headingId = useId();
   const themeName = useId();
 
@@ -33,10 +35,10 @@ export function BookSettings({ draft, dispatch }: BookSettingsProps) {
   return (
     <section className={styles.settings} aria-labelledby={headingId}>
       <h2 id={headingId} className={styles.heading}>
-        Book settings
+        {t.settings.heading}
       </h2>
       <label className={styles.field}>
-        Title
+        {t.settings.title}
         <input
           className={styles.control}
           value={draft.title}
@@ -44,7 +46,7 @@ export function BookSettings({ draft, dispatch }: BookSettingsProps) {
         />
       </label>
       <fieldset className={styles.themes}>
-        <legend className={styles.legend}>Theme</legend>
+        <legend className={styles.legend}>{t.settings.theme}</legend>
         {THEMES.map((theme) => (
           <label key={theme.id} className={styles.theme}>
             <input
@@ -56,14 +58,14 @@ export function BookSettings({ draft, dispatch }: BookSettingsProps) {
               onChange={() => dispatch({ type: 'setTheme', theme: theme.id })}
             />
             <span className={cx(styles.swatch, THEME_CLASS[theme.id])} aria-hidden="true" />
-            {theme.label}
+            {t.themes[theme.id]}
           </label>
         ))}
       </fieldset>
       <label className={styles.field}>
-        Size
+        {t.settings.size}
         <select className={styles.control} value={draft.format} onChange={onFormatChange}>
-          {Object.entries(FORMAT_LABELS).map(([value, label]) => (
+          {Object.entries(t.formats).map(([value, label]) => (
             <option key={value} value={value}>
               {label}
             </option>
@@ -71,9 +73,9 @@ export function BookSettings({ draft, dispatch }: BookSettingsProps) {
         </select>
       </label>
       <label className={styles.field}>
-        Cover
+        {t.settings.cover}
         <select className={styles.control} value={draft.coverType} onChange={onCoverChange}>
-          {Object.entries(COVER_LABELS).map(([value, label]) => (
+          {Object.entries(t.covers).map(([value, label]) => (
             <option key={value} value={value}>
               {label}
             </option>

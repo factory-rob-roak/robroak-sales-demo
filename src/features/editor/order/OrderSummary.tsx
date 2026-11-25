@@ -1,9 +1,9 @@
 import { useId, useRef, useState } from 'react';
-import { formatCents } from '../../../lib/money';
-import { COVER_LABELS, FORMAT_LABELS, type BookFormat, type CoverType } from '../../../types';
+import { useI18n } from '../../../i18n/useI18n';
+import type { BookFormat, CoverType } from '../../../types';
 import styles from './OrderSummary.module.css';
 import { PriceDetails } from './PriceDetails';
-import { describeOrderIssue, pluralize, quoteBook } from './orderQuote';
+import { describeOrderIssue, quoteBook } from './orderQuote';
 import { useOrderFlow } from './useOrderFlow';
 
 export interface OrderSummaryProps {
@@ -15,8 +15,9 @@ export interface OrderSummaryProps {
 }
 
 export function OrderSummary({ format, coverType, pageCount, emptySpreadCount }: OrderSummaryProps) {
+  const { t, formatCents } = useI18n();
   const quote = quoteBook({ format, coverType, pageCount });
-  const issue = describeOrderIssue(quote);
+  const issue = describeOrderIssue(quote, t.order);
   const flow = useOrderFlow({
     format,
     coverType,
@@ -34,13 +35,13 @@ export function OrderSummary({ format, coverType, pageCount, emptySpreadCount }:
     next();
     orderButtonRef.current?.focus();
   };
-  const bookDescription = `${pluralize(pageCount, 'page')} · ${FORMAT_LABELS[format]} · ${COVER_LABELS[coverType]}`;
+  const bookDescription = t.order.book(pageCount, t.formats[format], t.covers[coverType]);
 
   return (
     <section className={styles.summary} aria-labelledby={headingId}>
       <div className={styles.header}>
         <h2 id={headingId} className={styles.heading}>
-          Order summary
+          {t.order.heading}
         </h2>
         <button
           type="button"
@@ -49,17 +50,17 @@ export function OrderSummary({ format, coverType, pageCount, emptySpreadCount }:
           aria-controls={priceId}
           onClick={() => setPriceVisible((visible) => !visible)}
         >
-          {priceVisible ? 'Hide price' : 'Show price'}
+          {priceVisible ? t.order.hidePrice : t.order.showPrice}
         </button>
       </div>
       <p className={styles.meta}>{bookDescription}</p>
-      <div id={priceId} role="group" aria-label="Price details" hidden={!priceVisible}>
+      <div id={priceId} role="group" aria-label={t.order.priceDetails} hidden={!priceVisible}>
         <PriceDetails quote={quote} coverType={coverType} />
       </div>
       {issue &&
         (flow.step === 'blocked' ? (
           <p key="alert" id={issueId} role="alert" className={styles.alert}>
-            You can't order yet. {issue}
+            {t.order.cantOrder(issue)}
           </p>
         ) : (
           <p key="issue" id={issueId} className={styles.issue}>
@@ -73,27 +74,24 @@ export function OrderSummary({ format, coverType, pageCount, emptySpreadCount }:
         aria-describedby={issue ? issueId : undefined}
         onClick={flow.order}
       >
-        Order book
+        {t.order.orderBook}
       </button>
       {flow.step === 'confirm-empty' && (
         <div role="alert" className={styles.warning}>
-          <p>
-            {pluralize(emptySpreadCount, 'spread')} {emptySpreadCount === 1 ? 'has' : 'have'} no
-            photos and will print blank.
-          </p>
+          <p>{t.order.emptySpreads(emptySpreadCount)}</p>
           <div className={styles.actions}>
             <button type="button" className={styles.secondary} onClick={closeWarning(flow.acknowledgeEmpty)}>
-              Order anyway
+              {t.order.orderAnyway}
             </button>
             <button type="button" className={styles.secondary} onClick={closeWarning(flow.cancel)}>
-              Keep editing
+              {t.order.keepEditing}
             </button>
           </div>
         </div>
       )}
       <p role="status" className={styles.status}>
         {flow.step === 'ready' && quote.status === 'priced'
-          ? `Ready to order: ${bookDescription} · ${formatCents(quote.totalCents)}`
+          ? t.order.ready(bookDescription, formatCents(quote.totalCents))
           : null}
       </p>
     </section>

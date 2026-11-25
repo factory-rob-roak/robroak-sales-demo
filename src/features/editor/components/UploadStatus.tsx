@@ -1,4 +1,5 @@
 import { useRef, type RefObject } from 'react';
+import { useI18n } from '../../../i18n/useI18n';
 import type { PhotoUploadFailure } from '../usePhotoUpload';
 import styles from './UploadStatus.module.css';
 
@@ -11,6 +12,7 @@ interface UploadStatusProps {
 }
 
 export function UploadStatus({ inProgressCount, errors, onDismissError, returnFocusRef }: UploadStatusProps) {
+  const { t } = useI18n();
   const listRef = useRef<HTMLUListElement>(null);
 
   // The dismiss button unmounts with its error, so move focus to a neighbour before it disappears.
@@ -24,22 +26,21 @@ export function UploadStatus({ inProgressCount, errors, onDismissError, returnFo
   return (
     <>
       <p role="status" className={styles.progress}>
-        {inProgressCount > 0 &&
-          `Uploading ${inProgressCount} ${inProgressCount === 1 ? 'photo' : 'photos'}…`}
+        {inProgressCount > 0 && t.uploads.progress(inProgressCount)}
       </p>
       <div role="alert">
         {errors.length > 0 && (
-          <ul ref={listRef} className={styles.errors} aria-label="Upload problems">
+          <ul ref={listRef} className={styles.errors} aria-label={t.uploads.problems}>
             {errors.map((error, index) => (
               <li key={error.id} className={styles.error}>
-                <span>{error.message}</span>
+                <span>{t.uploads.errors[error.code](error.fileName)}</span>
                 <button
                   type="button"
                   className={styles.dismiss}
-                  aria-label={`Dismiss: ${error.message}`}
+                  aria-label={t.uploads.dismissLabel(t.uploads.errors[error.code](error.fileName))}
                   onClick={() => dismiss(error.id, index)}
                 >
-                  Dismiss
+                  {t.uploads.dismiss}
                 </button>
               </li>
             ))}
