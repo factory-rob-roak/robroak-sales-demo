@@ -61,16 +61,8 @@ export function Editor({ project, onClose, storage }: EditorProps) {
         onRedo={editor.redo}
         onClose={onClose}
       />
+      {/* Canvas first: phones and tablets show it on top, so focus order matches what they see. */}
       <div className={styles.columns}>
-        <div className={styles.tray}>
-          <PhotoTray
-            draft={draft}
-            dispatch={dispatch}
-            selectedPhotoId={selectedPhotoId}
-            onSelectPhoto={setSelectedPhotoId}
-            uploads={uploads}
-          />
-        </div>
         <main className={styles.canvas}>
           <PageCanvas
             draft={draft}
@@ -81,6 +73,15 @@ export function Editor({ project, onClose, storage }: EditorProps) {
             onReAddPhoto={uploads.reAddPhoto}
           />
         </main>
+        <div className={styles.tray}>
+          <PhotoTray
+            draft={draft}
+            dispatch={dispatch}
+            selectedPhotoId={selectedPhotoId}
+            onSelectPhoto={setSelectedPhotoId}
+            uploads={uploads}
+          />
+        </div>
         <div className={styles.side}>
           <SpreadList
             draft={draft}

@@ -99,4 +99,13 @@ describe('Editor', () => {
     expect(screen.getByRole('combobox', { name: 'Cover' })).toHaveDisplayValue('Hardcover');
     expect(screen.getByRole('heading', { name: 'Spread 1 of 2' })).toBeInTheDocument();
   });
+
+  it('moves focus from the toolbar to the canvas before the photo tray (WCAG 2.4.3)', async () => {
+    renderEditor();
+    const main = screen.getByRole('main');
+    const toolbarButtons = within(screen.getByRole('banner')).getAllByRole('button').length;
+    screen.getByRole('button', { name: 'Back to projects' }).focus();
+    for (let i = 0; i < toolbarButtons; i += 1) await userEvent.tab();
+    expect(main.contains(document.activeElement)).toBe(true);
+  });
 });
