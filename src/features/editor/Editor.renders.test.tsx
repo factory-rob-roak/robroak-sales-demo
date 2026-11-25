@@ -116,6 +116,8 @@ describe('Editor render counts', () => {
     expect(renders.canvas).toBe(3);
     expect(renders.slot).toBe(0);
     expect(renders.trayPhoto).toBe(0);
+    // Only the edited spread's page list item re-renders, once per keystroke.
+    expect(renders.spreadItem).toBe(3);
   });
 
   it('does not re-render the slots when zooming', async () => {

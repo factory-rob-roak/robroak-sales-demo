@@ -1,4 +1,4 @@
-import { memo, useCallback, useEffect, useId, useRef, useState } from 'react';
+import { memo, useCallback, useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
 import { MAX_SPREADS, PAGES_PER_SPREAD } from '../constants';
 import type { EditorAction, Photo, Spread } from '../types';
 import styles from './SpreadList.module.css';
@@ -66,18 +66,26 @@ export const SpreadList = memo(function SpreadList({
     [dispatch],
   );
 
+  // Read at click time so `remove` stays stable when one spread changes; otherwise
+  // every item would re-render on each caption keystroke.
+  const latest = useRef({ spreads, currentSpreadId });
+  useLayoutEffect(() => {
+    latest.current = { spreads, currentSpreadId };
+  });
+
   const remove = useCallback(
     (spreadId: string, index: number) => {
+      const { spreads: before, currentSpreadId: currentId } = latest.current;
       dispatch({ type: 'deleteSpread', spreadId });
-      setDeleted({ spreadId, number: index + 1, spreadsBefore: spreads, spreadsAfter: null });
-      if (spreadId === currentSpreadId) {
-        const remaining = spreads.filter((s) => s.id !== spreadId);
+      setDeleted({ spreadId, number: index + 1, spreadsBefore: before, spreadsAfter: null });
+      if (spreadId === currentId) {
+        const remaining = before.filter((s) => s.id !== spreadId);
         const next = remaining[Math.min(index, remaining.length - 1)];
         if (next) onSelectSpread(next.id);
       }
       pendingFocus.current = 'undo';
     },
-    [dispatch, spreads, currentSpreadId, onSelectSpread],
+    [dispatch, onSelectSpread],
   );
 
   const undoDelete = (spreadId: string) => {
