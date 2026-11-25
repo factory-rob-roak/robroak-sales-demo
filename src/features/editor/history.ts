@@ -29,13 +29,15 @@ export function createHistory<S>(present: S): History<S> {
   return { past: [], present, future: [], burst: null };
 }
 
-/** Typing in one caption, the title, or one photo's alt text coalesces into one undo step. */
+/** Typing in one caption, the title, the gift message, or one photo's alt text coalesces into one undo step. */
 export function editorCoalesceKey(action: EditorAction): string | null {
   switch (action.type) {
     case 'setCaption':
       return `caption:${action.spreadId}`;
     case 'setTitle':
       return 'title';
+    case 'setGiftMessage':
+      return 'giftMessage';
     case 'setPhotoAlt':
       return `alt:${action.photoId}`;
     default:

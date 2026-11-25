@@ -45,6 +45,8 @@ export const THEMES: readonly ThemeDefinition[] = [
 
 export const DEFAULT_TITLE = 'My Photo Book';
 
+export const GIFT_MESSAGE_MAX_LENGTH = 300;
+
 export type IdGenerator = () => string;
 
 /** Random UUID v4. Falls back to getRandomValues outside secure contexts, where randomUUID is missing. */
@@ -68,6 +70,7 @@ export function createDefaultDraft(newId: IdGenerator = createId): BookDraft {
     format: 'square-8',
     coverType: 'softcover',
     theme: 'classic',
+    giftMessage: '',
     spreads: [createSpread(newId(), 'full'), createSpread(newId(), 'two-up')],
     photos: [],
   };

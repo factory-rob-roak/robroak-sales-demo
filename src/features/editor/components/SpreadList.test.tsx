@@ -13,6 +13,7 @@ const start: BookDraft = {
   format: 'square-8',
   coverType: 'softcover',
   theme: 'classic',
+  giftMessage: '',
   spreads: [createSpread('a'), createSpread('b'), createSpread('c')],
   photos: [],
 };

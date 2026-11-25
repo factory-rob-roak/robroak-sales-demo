@@ -13,6 +13,7 @@ function makeDraft(overrides: Partial<BookDraft> = {}): BookDraft {
     format: 'square-8',
     coverType: 'softcover',
     theme: 'classic',
+    giftMessage: '',
     spreads: [{ id: 's1', layout: 'two-up', slots: ['p1', null, 'p3'], caption: '' }],
     photos: [
       { id: 'p1', url: 'blob:p1', name: 'beach.jpg', alt: 'Beach at sunset' },

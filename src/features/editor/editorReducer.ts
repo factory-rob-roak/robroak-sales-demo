@@ -1,4 +1,5 @@
 import { LAYOUT_SLOT_COUNT, MAX_SPREADS, createSpread } from './constants';
+import { clampGiftMessage } from './giftMessage';
 import type { BookDraft, EditorAction, Photo, SlotRef, Spread } from './types';
 
 /** Photo ids shown in a spread's current layout, with `null` for empty slots. */
@@ -148,6 +149,12 @@ export function editorReducer(state: BookDraft, action: EditorAction): BookDraft
       return state.format === action.format ? state : { ...state, format: action.format };
     case 'setCoverType':
       return state.coverType === action.coverType ? state : { ...state, coverType: action.coverType };
+    case 'setGiftMessage': {
+      const giftMessage = clampGiftMessage(action.message);
+      return state.giftMessage === giftMessage ? state : { ...state, giftMessage };
+    }
+    case 'removeGiftMessage':
+      return state.giftMessage === '' ? state : { ...state, giftMessage: '' };
     case 'addPhotos': {
       const known = new Set(state.photos.map((p) => p.id));
       const added: Photo[] = [];

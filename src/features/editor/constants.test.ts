@@ -58,6 +58,7 @@ describe('createDefaultDraft', () => {
       format: 'square-8',
       coverType: 'softcover',
       theme: 'classic',
+      giftMessage: '',
       spreads: [
         { id: 'id-1', layout: 'full', slots: [], caption: '' },
         { id: 'id-2', layout: 'two-up', slots: [], caption: '' },

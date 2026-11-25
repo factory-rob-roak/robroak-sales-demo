@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { createSpread } from './constants';
-import { STORAGE_KEY, createDraftStorage, getLocalStorage, parseDraft } from './storage';
+import { GIFT_MESSAGE_MAX_LENGTH, createSpread } from './constants';
+import { MIGRATIONS, STORAGE_KEY, STORAGE_VERSION, createDraftStorage, getLocalStorage, parseDraft } from './storage';
 import type { BookDraft } from './types';
 
 const draft: BookDraft = {
@@ -8,6 +8,7 @@ const draft: BookDraft = {
   format: 'landscape-11',
   coverType: 'hardcover',
   theme: 'kraft',
+  giftMessage: 'With love',
   spreads: [{ ...createSpread('s1', 'two-up'), slots: ['p1', 'p2'], caption: 'Beach' }, createSpread('s2')],
   photos: [
     { id: 'p1', url: 'https://img.test/1.jpg', name: '1.jpg', alt: 'Dog' },
@@ -15,7 +16,7 @@ const draft: BookDraft = {
   ],
 };
 
-const saved = (data: unknown, version: unknown = 1) => JSON.stringify({ version, draft: data });
+const saved = (data: unknown, version: unknown = STORAGE_VERSION) => JSON.stringify({ version, draft: data });
 
 beforeEach(() => {
   localStorage.clear();
@@ -30,7 +31,7 @@ describe('createDraftStorage', () => {
     const storage = createDraftStorage();
     expect(storage.load()).toEqual({ status: 'empty' });
     expect(storage.save(draft)).toEqual({ ok: true });
-    expect(JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '')).toEqual({ version: 1, draft });
+    expect(JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '')).toEqual({ version: 2, draft });
     expect(storage.load()).toEqual({ status: 'loaded', draft });
   });
 
@@ -41,16 +42,24 @@ describe('createDraftStorage', () => {
     ['a string version', saved(draft, '1')],
     ['a fractional version', saved(draft, 1.5)],
     ['version 0', saved(draft, 0)],
-    ['a newer version', saved(draft, 2)],
+    ['a newer version', saved(draft, 3)],
+    ['a version 1 draft that is not an object', saved('draft', 1)],
     ['an invalid draft', saved({ ...draft, theme: 'neon' })],
   ])('reports invalid data for %s', (_, raw) => {
     localStorage.setItem(STORAGE_KEY, raw);
     expect(createDraftStorage().load()).toEqual({ status: 'invalid' });
   });
 
+  it('upgrades a version 1 draft to have no gift message', () => {
+    const { giftMessage, ...v1 } = draft;
+    expect(giftMessage).not.toBe('');
+    localStorage.setItem(STORAGE_KEY, saved(v1, 1));
+    expect(createDraftStorage().load()).toEqual({ status: 'loaded', draft: { ...draft, giftMessage: '' } });
+  });
+
   it('runs migrations from the saved version up to the current one', () => {
     const { title, ...v1 } = draft;
-    localStorage.setItem(STORAGE_KEY, saved({ ...v1, name: title }));
+    localStorage.setItem(STORAGE_KEY, saved({ ...v1, name: title }, 1));
     const storage = createDraftStorage({
       version: 3,
       migrations: {
@@ -62,7 +71,7 @@ describe('createDraftStorage', () => {
   });
 
   it('reports invalid data when a migration is missing or throws', () => {
-    localStorage.setItem(STORAGE_KEY, saved(draft));
+    localStorage.setItem(STORAGE_KEY, saved(draft, 1));
     expect(createDraftStorage({ version: 2, migrations: {} }).load()).toEqual({ status: 'invalid' });
     const throwing = createDraftStorage({
       version: 2,
@@ -102,6 +111,14 @@ describe('createDraftStorage', () => {
     createDraftStorage({ key: 'other' }).save(draft);
     expect(localStorage.getItem('other')).not.toBeNull();
     expect(localStorage.getItem(STORAGE_KEY)).toBeNull();
+  });
+});
+
+describe('MIGRATIONS', () => {
+  it('adds an empty gift message to version 1 drafts and passes anything else through', () => {
+    expect(MIGRATIONS[1]?.({ title: 'Trip', giftMessage: 'stale' })).toEqual({ title: 'Trip', giftMessage: '' });
+    expect(MIGRATIONS[1]?.('draft')).toBe('draft');
+    expect(MIGRATIONS[1]?.(null)).toBeNull();
   });
 });
 
@@ -158,6 +175,19 @@ describe('parseDraft', () => {
       spreads: [{ ...spread, slots: ['p1', 'gone', null, 'gone'], extra: true }],
     });
     expect(parsed).toEqual({ ...draft, photos: [photo], spreads: [{ ...spread, slots: ['p1'] }] });
+  });
+
+  it.each<[string, unknown]>([
+    ['missing', undefined],
+    ['not a string', 42],
+    ['null', null],
+  ])('treats a gift message that is %s as no gift message', (_, giftMessage) => {
+    expect(parseDraft({ ...draft, giftMessage })).toEqual({ ...draft, giftMessage: '' });
+  });
+
+  it('cuts a gift message that is too long', () => {
+    const parsed = parseDraft({ ...draft, giftMessage: 'a'.repeat(GIFT_MESSAGE_MAX_LENGTH + 1) });
+    expect(parsed?.giftMessage).toBe('a'.repeat(GIFT_MESSAGE_MAX_LENGTH));
   });
 
   it('marks blob: photos as missing and keeps them in their slots', () => {

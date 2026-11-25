@@ -1,15 +1,19 @@
 import { COVER_LABELS, FORMAT_LABELS } from '../../types';
 import { LAYOUT_SLOT_COUNT, MAX_SLOTS, MAX_SPREADS, THEMES } from './constants';
+import { clampGiftMessage } from './giftMessage';
 import type { BookDraft, Photo, Spread, ThemeId } from './types';
 
 export const STORAGE_KEY = 'photo-book-editor:draft';
-export const STORAGE_VERSION = 1;
+export const STORAGE_VERSION = 2;
 
 /** Upgrades saved data from version n (the record key) to version n + 1. */
 export type Migration = (data: unknown) => unknown;
 
 /** Add an entry here whenever STORAGE_VERSION goes up. */
-export const MIGRATIONS: Readonly<Record<number, Migration>> = {};
+export const MIGRATIONS: Readonly<Record<number, Migration>> = {
+  // Version 2 adds the gift message. Anything that is not a draft is left for parseDraft to reject.
+  1: (data) => (isRecord(data) ? { ...data, giftMessage: '' } : data),
+};
 
 export type LoadResult =
   | { status: 'loaded'; draft: BookDraft }
@@ -104,7 +108,9 @@ export function parseDraft(value: unknown): BookDraft | null {
   const photoIds = new Set(photos.map((p) => p.id));
   const spreads = parseList(value.spreads, (s) => parseSpread(s, photoIds));
   if (spreads === null || spreads.length === 0 || spreads.length > MAX_SPREADS) return null;
-  return { title, format, coverType, theme, spreads, photos };
+  // A damaged gift message should not cost the user the whole book, so it falls back to none.
+  const giftMessage = typeof value.giftMessage === 'string' ? clampGiftMessage(value.giftMessage) : '';
+  return { title, format, coverType, theme, giftMessage, spreads, photos };
 }
 
 function isQuotaError(error: unknown): boolean {
