@@ -30,6 +30,7 @@ export function Editor({ project, onClose, storage }: EditorProps) {
   const [currentSpreadId, setCurrentSpreadId] = useState(draft.spreads[0]?.id ?? '');
   const [selectedPhotoId, setSelectedPhotoId] = useState<string | null>(null);
   const [selectNewSpreadAfter, setSelectNewSpreadAfter] = useState<number | null>(null);
+  const [returnToSpreadId, setReturnToSpreadId] = useState<string | null>(null);
   const rootRef = useRef<HTMLDivElement>(null);
 
   // Opening the editor replaces the whole page, so move focus to its heading.
@@ -41,6 +42,11 @@ export function Editor({ project, onClose, storage }: EditorProps) {
   if (selectNewSpreadAfter !== null && draft.spreads.length > selectNewSpreadAfter) {
     setSelectNewSpreadAfter(null);
     setCurrentSpreadId(draft.spreads[draft.spreads.length - 1]?.id ?? currentSpreadId);
+  }
+  // Any undo that brings back a deleted current spread makes it current again.
+  if (returnToSpreadId !== null && draft.spreads.some((spread) => spread.id === returnToSpreadId)) {
+    setReturnToSpreadId(null);
+    setCurrentSpreadId(returnToSpreadId);
   }
   // Undo or redo can remove the current spread; fall back to the first one.
   const found = draft.spreads.findIndex((spread) => spread.id === currentSpreadId);
@@ -86,7 +92,10 @@ export function Editor({ project, onClose, storage }: EditorProps) {
             draft={draft}
             dispatch={dispatch}
             currentSpreadId={currentId}
-            onSelectSpread={setCurrentSpreadId}
+            onSelectSpread={(spreadId, replacedSpreadId) => {
+              setCurrentSpreadId(spreadId);
+              setReturnToSpreadId(replacedSpreadId ?? null);
+            }}
             onAddSpread={() => {
               setSelectNewSpreadAfter(draft.spreads.length);
               editor.addSpread();

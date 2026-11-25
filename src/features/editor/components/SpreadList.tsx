@@ -3,6 +3,7 @@ import { MAX_SPREADS, PAGES_PER_SPREAD } from '../constants';
 import type { BookDraft, EditorAction, Spread } from '../types';
 import styles from './SpreadList.module.css';
 import { SpreadListItem } from './SpreadListItem';
+import { handleUndoShortcut } from './undoShortcuts';
 
 interface DeletedSpread {
   spreadId: string;
@@ -15,7 +16,8 @@ interface SpreadListProps {
   draft: BookDraft;
   dispatch: (action: EditorAction) => void;
   currentSpreadId: string;
-  onSelectSpread: (spreadId: string) => void;
+  /** `replacedSpreadId` is set when the current spread was deleted, so undo can select it again. */
+  onSelectSpread: (spreadId: string, replacedSpreadId?: string) => void;
   onAddSpread: () => void;
   onUndo: () => void;
 }
@@ -60,7 +62,7 @@ export function SpreadList({ draft, dispatch, currentSpreadId, onSelectSpread, o
     if (spread.id === currentSpreadId) {
       const remaining = spreads.filter((s) => s.id !== spread.id);
       const next = remaining[Math.min(index, remaining.length - 1)];
-      if (next) onSelectSpread(next.id);
+      if (next) onSelectSpread(next.id, spread.id);
     }
     pendingFocus.current = 'undo';
   };
@@ -96,7 +98,17 @@ export function SpreadList({ draft, dispatch, currentSpreadId, onSelectSpread, o
         ))}
       </ol>
       {deleted && deleted.spreadsAfter === spreads && (
-        <div role="status" className={styles.notice}>
+        <div
+          role="status"
+          className={styles.notice}
+          onKeyDown={(event) =>
+            // The editor root performs the undo; the notice and its button then disappear, so focus the restored spread.
+            handleUndoShortcut(event, {
+              undo: () => (pendingFocus.current = `${deleted.spreadId}-select`),
+              redo: () => {},
+            })
+          }
+        >
           Spread {deleted.number} deleted.
           <button
             ref={undoRef}
