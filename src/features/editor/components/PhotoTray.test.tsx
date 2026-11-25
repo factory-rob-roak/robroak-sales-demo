@@ -26,6 +26,7 @@ function makeDraft(overrides: Partial<BookDraft> = {}): BookDraft {
 function Harness({ draft = makeDraft(), onReAddPhoto = vi.fn() }) {
   const [state, dispatch] = useReducer(editorReducer, draft);
   const [selectedPhotoId, setSelectedPhotoId] = useState<string | null>(null);
+  const spread = state.spreads[0];
   return (
     <>
       <PhotoTray
@@ -42,14 +43,20 @@ function Harness({ draft = makeDraft(), onReAddPhoto = vi.fn() }) {
           reAddInput: { ref: { current: null }, onChange: vi.fn() },
         }}
       />
-      <PageCanvas
-        draft={state}
-        spreadIndex={0}
-        dispatch={dispatch}
-        selectedPhotoId={selectedPhotoId}
-        onPhotoPlaced={() => setSelectedPhotoId(null)}
-        onReAddPhoto={onReAddPhoto}
-      />
+      {spread && (
+        <PageCanvas
+          spread={spread}
+          spreadIndex={0}
+          spreadCount={state.spreads.length}
+          photos={state.photos}
+          theme={state.theme}
+          format={state.format}
+          dispatch={dispatch}
+          selectedPhotoId={selectedPhotoId}
+          onPhotoPlaced={() => setSelectedPhotoId(null)}
+          onReAddPhoto={onReAddPhoto}
+        />
+      )}
     </>
   );
 }

@@ -32,7 +32,7 @@ describe('PageSlot', () => {
     const { onPlace } = renderSlot({ selectedPhoto: dog });
     screen.getByRole('button', { name: 'Place Dog in the waves in slot 2' }).focus();
     await userEvent.keyboard('{Enter}');
-    expect(onPlace).toHaveBeenCalledWith('p2');
+    expect(onPlace).toHaveBeenCalledWith(1, 'p2');
   });
 
   it('does nothing when pressed with no photo selected', async () => {
@@ -50,7 +50,7 @@ describe('PageSlot', () => {
     const dragOver = fireEvent.dragOver(slot, { dataTransfer });
     expect(dragOver).toBe(false);
     fireEvent.drop(slot, { dataTransfer });
-    expect(onPlace).toHaveBeenCalledWith('p2');
+    expect(onPlace).toHaveBeenCalledWith(1, 'p2');
   });
 
   it('ignores drags that are not tray photos', () => {
@@ -65,7 +65,7 @@ describe('PageSlot', () => {
   it('removes its photo with a named button', async () => {
     const { onRemove } = renderSlot({ photo: beach });
     await userEvent.click(screen.getByRole('button', { name: 'Remove photo from slot 2' }));
-    expect(onRemove).toHaveBeenCalled();
+    expect(onRemove).toHaveBeenCalledWith(1);
   });
 
   it('keeps keyboard focus on the slot after its photo is removed', async () => {
