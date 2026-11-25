@@ -143,4 +143,24 @@ describe('PhotoTray', () => {
     render(<Harness draft={makeDraft({ photos: [], spreads: [] })} />);
     expect(screen.getByText('Add photos to start filling your book.')).toBeInTheDocument();
   });
+  it('returns focus to the photo when its selection is cleared', async () => {
+    const user = userEvent.setup();
+    render(<Harness />);
+    const dog = library().getByRole('button', { name: 'Dog in the waves' });
+    await user.click(dog);
+    await user.click(screen.getByRole('button', { name: 'Clear selection' }));
+    expect(screen.queryByRole('button', { name: 'Clear selection' })).not.toBeInTheDocument();
+    expect(dog).toHaveFocus();
+  });
+
+  it('returns focus to the photo when Escape closes its description field', async () => {
+    const user = userEvent.setup();
+    render(<Harness />);
+    const dog = library().getByRole('button', { name: 'Dog in the waves' });
+    await user.click(dog);
+    await user.click(screen.getByRole('textbox', { name: 'Description of dog.jpg' }));
+    await user.keyboard('{Escape}');
+    expect(screen.queryByRole('textbox', { name: 'Description of dog.jpg' })).not.toBeInTheDocument();
+    expect(dog).toHaveFocus();
+  });
 });

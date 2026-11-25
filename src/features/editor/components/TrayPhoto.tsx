@@ -36,6 +36,7 @@ export function TrayPhoto({ photo, used, selected, onToggle, onReAdd }: TrayPhot
         className={cx(styles.photo, selected && styles.selected)}
         aria-label={used ? `${description}, in book` : description}
         aria-pressed={selected}
+        data-photo-id={photo.id}
         draggable
         onDragStart={(event) => setPhotoDragData(event.dataTransfer, photo.id)}
         onClick={onToggle}

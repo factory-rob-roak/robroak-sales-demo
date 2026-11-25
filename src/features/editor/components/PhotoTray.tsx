@@ -19,13 +19,27 @@ interface PhotoTrayProps {
 export function PhotoTray({ draft, dispatch, selectedPhotoId, onSelectPhoto, uploads }: PhotoTrayProps) {
   const headingId = useId();
   const addPhotosRef = useRef<HTMLInputElement>(null);
+  const listRef = useRef<HTMLUListElement>(null);
+  const detailsRef = useRef<HTMLDivElement>(null);
   // Matches autoFill: a photo counts as used while any slot entry holds it, even one hidden by the layout.
   const usedIds = new Set(draft.spreads.flatMap((spread) => spread.slots));
   const selectedPhoto = draft.photos.find((photo) => photo.id === selectedPhotoId) ?? null;
   const unusedCount = draft.photos.filter((photo) => !photo.missing && !usedIds.has(photo.id)).length;
 
+  // The details panel unmounts with the selection, so focus goes back to the photo it described.
+  const clearSelection = () => {
+    if (!selectedPhoto) return;
+    const focusWasInDetails = detailsRef.current?.contains(document.activeElement) ?? false;
+    onSelectPhoto(null);
+    if (!focusWasInDetails) return;
+    const buttons = listRef.current?.querySelectorAll<HTMLButtonElement>('button[data-photo-id]') ?? [];
+    Array.from(buttons)
+      .find((button) => button.dataset.photoId === selectedPhoto.id)
+      ?.focus();
+  };
+
   const handleKeyDown = (event: KeyboardEvent<HTMLElement>) => {
-    if (event.key === 'Escape' && selectedPhoto) onSelectPhoto(null);
+    if (event.key === 'Escape') clearSelection();
   };
 
   return (
@@ -63,7 +77,7 @@ export function PhotoTray({ draft, dispatch, selectedPhotoId, onSelectPhoto, upl
       {draft.photos.length === 0 ? (
         <p className={styles.empty}>Add photos to start filling your book.</p>
       ) : (
-        <ul className={styles.list} aria-label="Photo library">
+        <ul ref={listRef} className={styles.list} aria-label="Photo library">
           {draft.photos.map((photo) => (
             <TrayPhoto
               key={photo.id}
@@ -76,13 +90,15 @@ export function PhotoTray({ draft, dispatch, selectedPhotoId, onSelectPhoto, upl
           ))}
         </ul>
       )}
-      {selectedPhoto && (
-        <SelectedPhotoDetails
-          photo={selectedPhoto}
-          onAltChange={(alt) => dispatch({ type: 'setPhotoAlt', photoId: selectedPhoto.id, alt })}
-          onClear={() => onSelectPhoto(null)}
-        />
-      )}
+      <div ref={detailsRef}>
+        {selectedPhoto && (
+          <SelectedPhotoDetails
+            photo={selectedPhoto}
+            onAltChange={(alt) => dispatch({ type: 'setPhotoAlt', photoId: selectedPhoto.id, alt })}
+            onClear={clearSelection}
+          />
+        )}
+      </div>
       <p role="status" className={shared.visuallyHidden}>
         {selectedPhoto
           ? `Selected ${selectedPhoto.alt || selectedPhoto.name}. Choose a slot on the page.`
