@@ -1,11 +1,6 @@
+import { useI18n } from '../../../i18n/useI18n';
 import type { SaveStatus } from '../types';
 import styles from './EditorToolbar.module.css';
-
-const SAVE_MESSAGES: Record<SaveStatus, string> = {
-  saved: 'All changes saved on this device',
-  pending: 'Saving…',
-  error: 'Could not save. Free up browser storage, or keep this tab open.',
-};
 
 interface EditorToolbarProps {
   title: string;
@@ -18,13 +13,14 @@ interface EditorToolbarProps {
 }
 
 export function EditorToolbar({ title, canUndo, canRedo, saveStatus, onUndo, onRedo, onClose }: EditorToolbarProps) {
+  const { t } = useI18n();
   return (
     <header className={styles.toolbar}>
       <button type="button" className={styles.button} onClick={onClose}>
-        <span aria-hidden="true">←</span> Back to projects
+        <span aria-hidden="true">←</span> {t.toolbar.back}
       </button>
-      <h1 className={styles.title} tabIndex={-1}>{title.trim() || 'Untitled book'}</h1>
-      <div className={styles.history} role="group" aria-label="History">
+      <h1 className={styles.title} tabIndex={-1}>{title.trim() || t.toolbar.untitled}</h1>
+      <div className={styles.history} role="group" aria-label={t.toolbar.history}>
         <button
           type="button"
           className={styles.button}
@@ -32,7 +28,7 @@ export function EditorToolbar({ title, canUndo, canRedo, saveStatus, onUndo, onR
           aria-keyshortcuts="Control+Z Meta+Z"
           onClick={() => canUndo && onUndo()}
         >
-          Undo
+          {t.common.undo}
         </button>
         <button
           type="button"
@@ -41,11 +37,11 @@ export function EditorToolbar({ title, canUndo, canRedo, saveStatus, onUndo, onR
           aria-keyshortcuts="Control+Shift+Z Meta+Shift+Z Control+Y"
           onClick={() => canRedo && onRedo()}
         >
-          Redo
+          {t.common.redo}
         </button>
       </div>
       <p role="status" className={styles[saveStatus]}>
-        {SAVE_MESSAGES[saveStatus]}
+        {t.toolbar.save[saveStatus]}
       </p>
     </header>
   );

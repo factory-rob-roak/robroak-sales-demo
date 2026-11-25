@@ -1,4 +1,5 @@
 import { useId, useState } from 'react';
+import { useI18n } from '../../../i18n/useI18n';
 import type { BookFormat } from '../../../types';
 import { visibleSlots } from '../editorReducer';
 import type { BookDraft, EditorAction, LayoutId } from '../types';
@@ -42,6 +43,7 @@ export function PageCanvas({
   onPhotoPlaced,
   onReAddPhoto,
 }: PageCanvasProps) {
+  const { t } = useI18n();
   const [zoomPercent, setZoomPercent] = useState(100);
   const [announcement, setAnnouncement] = useState('');
   const headingId = useId();
@@ -56,13 +58,13 @@ export function PageCanvas({
     dispatch({ type: 'placePhoto', target: { spreadId: spread.id, slot }, photoId });
     onPhotoPlaced();
     const photo = photoById.get(photoId);
-    if (photo) setAnnouncement(`Placed ${photo.alt || photo.name} in slot ${slot + 1}.`);
+    if (photo) setAnnouncement(t.canvas.placed(photo.alt || photo.name, slot + 1));
   };
 
   return (
     <section className={cx(styles.canvas, THEME_CLASS[draft.theme])} aria-labelledby={headingId}>
       <h2 id={headingId} className={styles.heading}>
-        Spread {spreadIndex + 1} of {draft.spreads.length}
+        {t.canvas.heading(spreadIndex + 1, draft.spreads.length)}
       </h2>
       <LayoutPicker
         layout={spread.layout}
@@ -70,8 +72,8 @@ export function PageCanvas({
       />
       <p id={hintId} className={styles.hint}>
         {selectedPhoto
-          ? `Choose a slot for ${selectedPhoto.alt || selectedPhoto.name}.`
-          : 'Drag a photo onto a slot, or select a photo in the tray and then choose a slot.'}
+          ? t.canvas.hintSelected(selectedPhoto.alt || selectedPhoto.name)
+          : t.canvas.hint}
       </p>
       <div className={styles.viewport}>
         <div
@@ -93,11 +95,11 @@ export function PageCanvas({
         </div>
       </div>
       <label className={styles.caption}>
-        Caption
+        {t.canvas.caption}
         <input
           className={styles.captionInput}
           value={spread.caption}
-          placeholder="Add a caption"
+          placeholder={t.canvas.captionPlaceholder}
           onChange={(event) =>
             dispatch({ type: 'setCaption', spreadId: spread.id, caption: event.target.value })
           }
