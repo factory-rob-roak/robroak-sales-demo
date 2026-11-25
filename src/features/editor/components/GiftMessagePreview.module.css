@@ -6,14 +6,17 @@
 }
 
 .page {
+  /* Text is sized against the page width so a full message fits the page at any preview size. */
+  container-type: inline-size;
   display: flex;
-  align-items: center;
+  /* "safe" keeps the start of a message visible if it is taller than the page. */
+  align-items: safe center;
   justify-content: center;
   box-sizing: border-box;
-  width: min(100%, 14rem);
+  width: min(100%, 20rem);
   margin: 0 auto;
-  padding: 8%;
-  overflow: hidden;
+  padding: 6%;
+  overflow: auto;
   background: var(--page-bg);
   color: var(--page-fg);
   font-family: var(--page-font);
@@ -35,8 +38,8 @@
 .message,
 .placeholder {
   margin: 0;
-  font-size: 0.75rem;
-  line-height: 1.4;
+  font-size: 3.6cqi;
+  line-height: 1.35;
   text-align: center;
   white-space: pre-wrap;
   overflow-wrap: anywhere;
