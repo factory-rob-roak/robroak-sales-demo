@@ -1,0 +1,7 @@
+{
+  "$comment": "Gzip size limits in kB (1 kB = 1000 bytes, zlib default level), checked by scripts/check-bundle-size.mjs after npm run build. Set about 5% above the build when the check was added. Raise a limit only with a reason in the PR.",
+  "initialJs": 74,
+  "initialCss": 1,
+  "totalJs": 86,
+  "totalCss": 4.25
+}
