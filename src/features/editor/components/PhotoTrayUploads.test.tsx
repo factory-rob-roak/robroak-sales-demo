@@ -138,8 +138,8 @@ describe('PhotoTray re-add and cleanup', () => {
 
 describe('altFromFileName', () => {
   it('drops the extension and separators, and never returns an empty description', () => {
-    expect(altFromFileName('IMG_2041.JPG')).toBe('IMG 2041');
-    expect(altFromFileName('summer.lake-trip_01.png')).toBe('summer lake trip 01');
-    expect(altFromFileName('.jpg')).toBe('Photo');
+    expect(altFromFileName('IMG_2041.JPG', 'Photo')).toBe('IMG 2041');
+    expect(altFromFileName('summer.lake-trip_01.png', 'Photo')).toBe('summer lake trip 01');
+    expect(altFromFileName('.jpg', 'Photo')).toBe('Photo');
   });
 });

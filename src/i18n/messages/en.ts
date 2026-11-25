@@ -1,11 +1,83 @@
-import type { LayoutId, SaveStatus } from '../../features/editor/types';
+import type { PhotoUploadErrorCode } from '../../api/photoUpload';
+import type { LayoutId, SaveStatus, ThemeId } from '../../features/editor/types';
 import type { BookFormat, CoverType } from '../../types';
 import { createFormatters } from '../format';
 
 const { number: n, percent: pct, plural } = createFormatters('en');
+const pages = (count: number) => plural(count, { one: `${n(count)} page`, other: `${n(count)} pages` });
 
 /** The source catalog. Every other locale must provide exactly these keys, with the same parameters. */
 export const en = {
+  themes: {
+    classic: 'Classic',
+    modern: 'Modern',
+    kraft: 'Kraft',
+    pastel: 'Pastel',
+  } satisfies Record<ThemeId, string>,
+  settings: {
+    heading: 'Book settings',
+    title: 'Title',
+    theme: 'Theme',
+    size: 'Size',
+    cover: 'Cover',
+  },
+  tray: {
+    heading: (count: number) => `Photos (${n(count)})`,
+    addPhotos: 'Add photos',
+    replacement: 'Replacement photo',
+    autoFill: 'Auto-fill empty slots',
+    empty: 'Add photos to start filling your book.',
+    library: 'Photo library',
+    selected: (photo: string) => `Selected ${photo}. Choose a slot on the page.`,
+    missing: (name: string) => `${name} is missing`,
+    inBook: 'In book',
+    inBookLabel: (photo: string) => `${photo}, in book`,
+    description: (name: string) => `Description of ${name}`,
+    clearSelection: 'Clear selection',
+    fallbackAlt: 'Photo',
+  },
+  uploads: {
+    progress: (count: number) =>
+      plural(count, { one: `Uploading ${n(count)} photo…`, other: `Uploading ${n(count)} photos…` }),
+    problems: 'Upload problems',
+    dismiss: 'Dismiss',
+    dismissLabel: (message: string) => `Dismiss: ${message}`,
+    errors: {
+      'unsupported-type': (file: string) => `${file} is not a supported image. Use JPEG, PNG, WebP, or GIF.`,
+      'too-large': (file: string) => `${file} is too large to upload.`,
+      network: (file: string) => `${file} could not be uploaded. Try again.`,
+      aborted: (file: string) => `Upload of ${file} was canceled.`,
+    } satisfies Record<PhotoUploadErrorCode, (file: string) => string>,
+  },
+  order: {
+    heading: 'Order summary',
+    hidePrice: 'Hide price',
+    showPrice: 'Show price',
+    priceDetails: 'Price details',
+    book: (count: number, format: string, cover: string) => `${pages(count)} · ${format} · ${cover}`,
+    startsAt: (price: string, count: number) => `Books start at ${price} for ${pages(count)}.`,
+    noPrice: 'The price appears once the page count can be printed.',
+    total: 'Total',
+    base: (count: number) => `Book with ${pages(count)}`,
+    extraPages: (count: number) =>
+      plural(count, { one: `${n(count)} extra page`, other: `${n(count)} extra pages` }),
+    coverUpgrade: (cover: string) => `${cover} upgrade`,
+    tooFewPages: (needed: number, minimum: number) =>
+      `Add ${plural(needed, { one: `${n(needed)} more page`, other: `${n(needed)} more pages` })} to reach the ${n(minimum)}-page minimum.`,
+    tooManyPages: (maximum: number, over: number) =>
+      `Books can have at most ${pages(maximum)}. Remove ${pages(over)}.`,
+    unpriceable: (reason: string) => `This book can't be printed yet: ${reason}.`,
+    cantOrder: (issue: string) => `You can't order yet. ${issue}`,
+    orderBook: 'Order book',
+    emptySpreads: (count: number) =>
+      plural(count, {
+        one: `${n(count)} spread has no photos and will print blank.`,
+        other: `${n(count)} spreads have no photos and will print blank.`,
+      }),
+    orderAnyway: 'Order anyway',
+    keepEditing: 'Keep editing',
+    ready: (book: string, price: string) => `Ready to order: ${book} · ${price}`,
+  },
   common: {
     undo: 'Undo',
     redo: 'Redo',
@@ -83,7 +155,7 @@ export const en = {
   projects: {
     heading: 'Your photo books',
     listLabel: 'Projects',
-    pageCount: (count: number) => plural(count, { one: `${n(count)} page`, other: `${n(count)} pages` }),
+    pageCount: pages,
     open: (title: string) => `Open ${title}`,
     edited: (date: string) => `Edited ${date}`,
   },

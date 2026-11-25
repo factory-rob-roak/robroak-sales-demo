@@ -1,3 +1,4 @@
+import { useI18n } from '../../../i18n/useI18n';
 import type { Photo } from '../types';
 import styles from './SelectedPhotoDetails.module.css';
 
@@ -8,10 +9,11 @@ interface SelectedPhotoDetailsProps {
 }
 
 export function SelectedPhotoDetails({ photo, onAltChange, onClear }: SelectedPhotoDetailsProps) {
+  const { t } = useI18n();
   return (
     <div className={styles.details}>
       <label className={styles.label}>
-        Description of {photo.name}
+        {t.tray.description(photo.name)}
         <input
           className={styles.input}
           value={photo.alt}
@@ -19,7 +21,7 @@ export function SelectedPhotoDetails({ photo, onAltChange, onClear }: SelectedPh
         />
       </label>
       <button type="button" className={styles.clear} onClick={onClear}>
-        Clear selection
+        {t.tray.clearSelection}
       </button>
     </div>
   );

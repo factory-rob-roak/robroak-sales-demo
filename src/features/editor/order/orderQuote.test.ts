@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
+import { en } from '../../../i18n/messages/en';
 import * as pricing from '../../../lib/pricing';
 import { describeOrderIssue, quoteBook } from './orderQuote';
 
@@ -51,6 +52,6 @@ describe('describeOrderIssue', () => {
     [101, 'Books can have at most 100 pages. Remove 1 page.'],
     [21, "This book can't be printed yet: Page count must be even."],
   ])('explains a %s-page book', (pageCount, message) => {
-    expect(describeOrderIssue(quote(pageCount))).toBe(message);
+    expect(describeOrderIssue(quote(pageCount), en.order)).toBe(message);
   });
 });

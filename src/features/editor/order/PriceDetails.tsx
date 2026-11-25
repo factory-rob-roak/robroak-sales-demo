@@ -1,8 +1,8 @@
-import { formatCents } from '../../../lib/money';
+import { useI18n } from '../../../i18n/useI18n';
 import { INCLUDED_PAGES, MIN_PAGES } from '../../../lib/pricing';
-import { COVER_LABELS, type CoverType } from '../../../types';
+import type { CoverType } from '../../../types';
 import styles from './OrderSummary.module.css';
-import { pluralize, type OrderQuote } from './orderQuote';
+import type { OrderQuote } from './orderQuote';
 
 interface PriceDetailsProps {
   quote: OrderQuote;
@@ -10,37 +10,38 @@ interface PriceDetailsProps {
 }
 
 export function PriceDetails({ quote, coverType }: PriceDetailsProps) {
+  const { t, formatCents } = useI18n();
   if (quote.status === 'too-few-pages') {
     return (
       <p className={styles.meta}>
-        Books start at {formatCents(quote.minimumCents)} for {MIN_PAGES} pages.
+        {t.order.startsAt(formatCents(quote.minimumCents), MIN_PAGES)}
       </p>
     );
   }
   if (quote.status !== 'priced') {
-    return <p className={styles.meta}>The price appears once the page count can be printed.</p>;
+    return <p className={styles.meta}>{t.order.noPrice}</p>;
   }
   const { baseCents, extraPages, extraPagesCents, coverCents } = quote.breakdown;
   return (
     <>
       <p className={styles.total}>
-        <span>Total</span>
+        <span>{t.order.total}</span>
         <span className={styles.amount}>{formatCents(quote.totalCents)}</span>
       </p>
       <dl className={styles.breakdown}>
         <div className={styles.row}>
-          <dt>Book with {INCLUDED_PAGES} pages</dt>
+          <dt>{t.order.base(INCLUDED_PAGES)}</dt>
           <dd>{formatCents(baseCents)}</dd>
         </div>
         {extraPages > 0 && (
           <div className={styles.row}>
-            <dt>{pluralize(extraPages, 'extra page')}</dt>
+            <dt>{t.order.extraPages(extraPages)}</dt>
             <dd>+{formatCents(extraPagesCents)}</dd>
           </div>
         )}
         {coverCents > 0 && (
           <div className={styles.row}>
-            <dt>{COVER_LABELS[coverType]} upgrade</dt>
+            <dt>{t.order.coverUpgrade(t.covers[coverType])}</dt>
             <dd>+{formatCents(coverCents)}</dd>
           </div>
         )}

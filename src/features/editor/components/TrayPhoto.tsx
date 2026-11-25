@@ -1,3 +1,4 @@
+import { useI18n } from '../../../i18n/useI18n';
 import type { Photo } from '../types';
 import { cx } from './classNames';
 import { setPhotoDragData } from './photoDrag';
@@ -12,17 +13,18 @@ interface TrayPhotoProps {
 }
 
 export function TrayPhoto({ photo, used, selected, onToggle, onReAdd }: TrayPhotoProps) {
+  const { t } = useI18n();
   if (photo.missing) {
     return (
       <li className={cx(styles.item, styles.missing)}>
-        <span className={styles.missingName}>{photo.name} is missing</span>
+        <span className={styles.missingName}>{t.tray.missing(photo.name)}</span>
         <button
           type="button"
           className={styles.reAdd}
-          aria-label={`Re-add photo ${photo.name}`}
+          aria-label={t.photos.reAddLabel(photo.name)}
           onClick={onReAdd}
         >
-          Re-add photo
+          {t.photos.reAdd}
         </button>
       </li>
     );
@@ -34,7 +36,7 @@ export function TrayPhoto({ photo, used, selected, onToggle, onReAdd }: TrayPhot
       <button
         type="button"
         className={cx(styles.photo, selected && styles.selected)}
-        aria-label={used ? `${description}, in book` : description}
+        aria-label={used ? t.tray.inBookLabel(description) : description}
         aria-pressed={selected}
         draggable
         onDragStart={(event) => setPhotoDragData(event.dataTransfer, photo.id)}
@@ -43,7 +45,7 @@ export function TrayPhoto({ photo, used, selected, onToggle, onReAdd }: TrayPhot
         <img className={styles.image} src={photo.url} alt={description} draggable={false} />
         {used && (
           <span className={styles.usedBadge} aria-hidden="true">
-            In book
+            {t.tray.inBook}
           </span>
         )}
       </button>
