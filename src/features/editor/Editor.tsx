@@ -25,13 +25,18 @@ interface EditorProps {
 export function Editor({ project, onClose, storage }: EditorProps) {
   const [draftStorage] = useState(() => storage ?? createProjectDraftStorage(project));
   const editor = useEditor({ storage: draftStorage });
-  const { draft, dispatch } = editor;
+  const { draft, dispatch, addSpread } = editor;
   const uploads = useTrayUploads(dispatch);
   const [currentSpreadId, setCurrentSpreadId] = useState(draft.spreads[0]?.id ?? '');
   const [selectedPhotoId, setSelectedPhotoId] = useState<string | null>(null);
   const [selectNewSpreadAfter, setSelectNewSpreadAfter] = useState<number | null>(null);
   const rootRef = useRef<HTMLDivElement>(null);
   const clearSelectedPhoto = useCallback(() => setSelectedPhotoId(null), []);
+  const spreadCount = draft.spreads.length;
+  const handleAddSpread = useCallback(() => {
+    setSelectNewSpreadAfter(spreadCount);
+    addSpread();
+  }, [spreadCount, addSpread]);
 
   // Opening the editor replaces the whole page, so move focus to its heading.
   useEffect(() => {
@@ -66,7 +71,8 @@ export function Editor({ project, onClose, storage }: EditorProps) {
       <div className={styles.columns}>
         <div className={styles.tray}>
           <PhotoTray
-            draft={draft}
+            photos={draft.photos}
+            spreads={draft.spreads}
             dispatch={dispatch}
             selectedPhotoId={selectedPhotoId}
             onSelectPhoto={setSelectedPhotoId}
@@ -91,14 +97,12 @@ export function Editor({ project, onClose, storage }: EditorProps) {
         </main>
         <div className={styles.side}>
           <SpreadList
-            draft={draft}
+            spreads={draft.spreads}
+            photos={draft.photos}
             dispatch={dispatch}
             currentSpreadId={currentId}
             onSelectSpread={setCurrentSpreadId}
-            onAddSpread={() => {
-              setSelectNewSpreadAfter(draft.spreads.length);
-              editor.addSpread();
-            }}
+            onAddSpread={handleAddSpread}
             onUndo={editor.undo}
           />
           <OrderSummary

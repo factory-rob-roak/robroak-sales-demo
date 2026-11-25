@@ -30,7 +30,8 @@ function Harness({ draft = makeDraft(), onReAddPhoto = vi.fn() }) {
   return (
     <>
       <PhotoTray
-        draft={state}
+        photos={state.photos}
+        spreads={state.spreads}
         dispatch={dispatch}
         selectedPhotoId={selectedPhotoId}
         onSelectPhoto={setSelectedPhotoId}

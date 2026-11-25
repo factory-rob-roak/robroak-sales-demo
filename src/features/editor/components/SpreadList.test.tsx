@@ -27,7 +27,8 @@ function Harness({ draft = start }: { draft?: BookDraft }) {
   const [currentId, setCurrentId] = useState('a');
   return (
     <SpreadList
-      draft={editor.draft}
+      spreads={editor.draft.spreads}
+      photos={editor.draft.photos}
       dispatch={editor.dispatch}
       currentSpreadId={currentId}
       onSelectSpread={setCurrentId}

@@ -25,7 +25,8 @@ function Tray({ initial = emptyDraft }: { initial?: BookDraft }) {
   const uploads = useTrayUploads(dispatch);
   return (
     <PhotoTray
-      draft={draft}
+      photos={draft.photos}
+      spreads={draft.spreads}
       dispatch={dispatch}
       selectedPhotoId={null}
       onSelectPhoto={() => {}}

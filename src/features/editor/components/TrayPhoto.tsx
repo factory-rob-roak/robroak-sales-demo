@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import type { Photo } from '../types';
 import { cx } from './classNames';
 import { setPhotoDragData } from './photoDrag';
@@ -7,11 +8,12 @@ interface TrayPhotoProps {
   photo: Photo;
   used: boolean;
   selected: boolean;
-  onToggle: () => void;
-  onReAdd: () => void;
+  /** Called with this photo's id to select it, or null to clear the selection. */
+  onSelect: (photoId: string | null) => void;
+  onReAdd: (photoId: string) => void;
 }
 
-export function TrayPhoto({ photo, used, selected, onToggle, onReAdd }: TrayPhotoProps) {
+export const TrayPhoto = memo(function TrayPhoto({ photo, used, selected, onSelect, onReAdd }: TrayPhotoProps) {
   if (photo.missing) {
     return (
       <li className={cx(styles.item, styles.missing)}>
@@ -20,7 +22,7 @@ export function TrayPhoto({ photo, used, selected, onToggle, onReAdd }: TrayPhot
           type="button"
           className={styles.reAdd}
           aria-label={`Re-add photo ${photo.name}`}
-          onClick={onReAdd}
+          onClick={() => onReAdd(photo.id)}
         >
           Re-add photo
         </button>
@@ -38,7 +40,7 @@ export function TrayPhoto({ photo, used, selected, onToggle, onReAdd }: TrayPhot
         aria-pressed={selected}
         draggable
         onDragStart={(event) => setPhotoDragData(event.dataTransfer, photo.id)}
-        onClick={onToggle}
+        onClick={() => onSelect(selected ? null : photo.id)}
       >
         <img className={styles.image} src={photo.url} alt={description} draggable={false} />
         {used && (
@@ -49,4 +51,4 @@ export function TrayPhoto({ photo, used, selected, onToggle, onReAdd }: TrayPhot
       </button>
     </li>
   );
-}
+});

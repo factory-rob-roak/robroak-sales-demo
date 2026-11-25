@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, type ChangeEvent, type RefObject } from 'react';
+import { useCallback, useEffect, useMemo, useRef, type ChangeEvent, type RefObject } from 'react';
 import type { EditorAction } from '../types';
 import { usePhotoUpload, type PhotoUploadFailure } from '../usePhotoUpload';
 import { toEditorPhoto } from './photoFromUpload';
@@ -73,12 +73,16 @@ export function useTrayUploads(dispatch: (action: EditorAction) => void): TrayUp
     [upload, dispatch],
   );
 
-  return {
-    onAddFiles,
-    inProgressCount,
-    errors,
-    onDismissError: dismissError,
-    reAddPhoto,
-    reAddInput: { ref: inputRef, onChange },
-  };
+  // A stable object lets the memoized tray skip renders while no upload state changes.
+  return useMemo(
+    () => ({
+      onAddFiles,
+      inProgressCount,
+      errors,
+      onDismissError: dismissError,
+      reAddPhoto,
+      reAddInput: { ref: inputRef, onChange },
+    }),
+    [onAddFiles, inProgressCount, errors, dismissError, reAddPhoto, onChange],
+  );
 }
