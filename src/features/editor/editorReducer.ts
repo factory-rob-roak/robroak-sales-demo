@@ -153,6 +153,8 @@ export function editorReducer(state: BookDraft, action: EditorAction): BookDraft
       const giftMessage = clampGiftMessage(action.message);
       return state.giftMessage === giftMessage ? state : { ...state, giftMessage };
     }
+    case 'removeGiftMessage':
+      return state.giftMessage === '' ? state : { ...state, giftMessage: '' };
     case 'addPhotos': {
       const known = new Set(state.photos.map((p) => p.id));
       const added: Photo[] = [];

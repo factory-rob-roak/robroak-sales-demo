@@ -58,6 +58,8 @@ export type EditorAction =
   | { type: 'setCoverType'; coverType: CoverType }
   /** Longer messages are cut to GIFT_MESSAGE_MAX_LENGTH; an empty one removes the gift page. */
   | { type: 'setGiftMessage'; message: string }
+  /** Its own undo step, so removing right after typing never merges into the typing burst. */
+  | { type: 'removeGiftMessage' }
   | { type: 'addPhotos'; photos: Photo[] }
   | { type: 'setPhotoAlt'; photoId: string; alt: string }
   /** Points an existing photo at a new upload, keeping its id and slot references. */

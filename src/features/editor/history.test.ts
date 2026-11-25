@@ -111,11 +111,22 @@ describe('editor history', () => {
     expect(editor(typed, { type: 'undo' }).present).toBe(draft);
   });
 
+  it('undoes a gift message removal on its own, even right after typing', () => {
+    const typed = ['W', 'Wi', 'With love'].reduce(
+      (h, message, i) => editor(h, apply({ type: 'setGiftMessage', message }, i * 100)),
+      createHistory(draft),
+    );
+    const removed = editor(typed, apply({ type: 'removeGiftMessage' }, 300));
+    expect(removed.present.giftMessage).toBe('');
+    expect(editor(removed, { type: 'undo' }).present.giftMessage).toBe('With love');
+  });
+
   it('keys caption, title, and alt edits separately and leaves other actions alone', () => {
     expect(editorCoalesceKey({ type: 'setCaption', spreadId: 'a', caption: '' })).toBe('caption:a');
     expect(editorCoalesceKey({ type: 'setCaption', spreadId: 'b', caption: '' })).toBe('caption:b');
     expect(editorCoalesceKey({ type: 'setTitle', title: '' })).toBe('title');
     expect(editorCoalesceKey({ type: 'setGiftMessage', message: '' })).toBe('giftMessage');
+    expect(editorCoalesceKey({ type: 'removeGiftMessage' })).toBeNull();
     expect(editorCoalesceKey({ type: 'setPhotoAlt', photoId: 'p', alt: '' })).toBe('alt:p');
     expect(editorCoalesceKey({ type: 'autoFill' })).toBeNull();
   });

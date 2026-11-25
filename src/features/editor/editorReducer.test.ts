@@ -176,6 +176,13 @@ describe('book settings', () => {
     expect(run(s, { type: 'setGiftMessage', message: '' })).toBe(s);
   });
 
+  it('removes the gift message', () => {
+    const s = draft();
+    const set = run(s, { type: 'setGiftMessage', message: 'With love' });
+    expect(run(set, { type: 'removeGiftMessage' })).toEqual(s);
+    expect(run(s, { type: 'removeGiftMessage' })).toBe(s);
+  });
+
   it('cuts a pasted gift message to the limit', () => {
     const s = draft();
     const pasted = run(s, { type: 'setGiftMessage', message: 'x'.repeat(GIFT_MESSAGE_MAX_LENGTH + 20) });
