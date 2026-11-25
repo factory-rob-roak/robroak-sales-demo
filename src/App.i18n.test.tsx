@@ -2,7 +2,7 @@ import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it } from 'vitest';
 import { App } from './App';
-import { CATALOGS } from './i18n/catalogs';
+import { loadCatalog } from './i18n/catalogs';
 import { I18nProvider } from './i18n/I18nProvider';
 import type { Locale } from './i18n/locales';
 import { en } from './i18n/messages/en';
@@ -40,8 +40,8 @@ function pageText(): string {
   return [document.body.textContent, ...attributes].join('\n');
 }
 
-function expectNoEnglish(locale: Locale) {
-  const translated = staticStrings(CATALOGS[locale]);
+async function expectNoEnglish(locale: Locale) {
+  const translated = staticStrings(await loadCatalog(locale));
   const text = pageText();
   for (const [path, english] of staticStrings(en)) {
     const own = translated.get(path) ?? '';
@@ -54,21 +54,21 @@ function expectNoEnglish(locale: Locale) {
 }
 
 describe('App in German', () => {
-  it('shows the project list with German copy, dates, and prices', () => {
+  it('shows the project list with German copy, dates, and prices', async () => {
     renderApp('de');
-    expect(screen.getByRole('heading', { level: 1, name: 'Deine Fotobücher' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { level: 1, name: 'Deine Fotobücher' })).toBeInTheDocument();
     const card = within(screen.getByRole('article', { name: 'Summer in Maine' }));
     expect(card.getByText('11 × 8,5 Zoll, Querformat · Hardcover · 24 Seiten')).toBeInTheDocument();
     expect(card.getByText('Bearbeitet am 01.11.2026')).toBeInTheDocument();
     expect(card.getByText('65,99 $')).toBeInTheDocument();
     expect(document.documentElement).toHaveAttribute('lang', 'de');
-    expectNoEnglish('de');
+    await expectNoEnglish('de');
   });
 
   it('shows the editor in German', async () => {
     const user = userEvent.setup();
     renderApp('de');
-    await user.click(screen.getByRole('button', { name: 'Family Recipes öffnen' }));
+    await user.click(await screen.findByRole('button', { name: 'Family Recipes öffnen' }));
     expect(screen.getByRole('combobox', { name: 'Format' })).toHaveDisplayValue('8,5 × 11 Zoll, Hochformat');
     expect(screen.getByRole('heading', { name: 'Doppelseite 1 von 2' })).toBeInTheDocument();
     expect(screen.getByText('2 Doppelseiten · 4 gedruckte Seiten')).toBeInTheDocument();
@@ -77,6 +77,6 @@ describe('App in German', () => {
     );
     expect(screen.getByText('Bücher gibt es ab 39,99 $ für 20 Seiten.')).toBeInTheDocument();
     expect(screen.getByRole('group', { name: 'Zoom' })).toHaveTextContent('100 %');
-    expectNoEnglish('de');
+    await expectNoEnglish('de');
   });
 });
