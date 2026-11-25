@@ -12,9 +12,17 @@ export interface OrderSummaryProps {
   /** Printed pages: spreads × 2. */
   pageCount: number;
   emptySpreadCount: number;
+  /** The gift message page prints free and is not counted in pageCount. */
+  hasGiftPage?: boolean;
 }
 
-export function OrderSummary({ format, coverType, pageCount, emptySpreadCount }: OrderSummaryProps) {
+export function OrderSummary({
+  format,
+  coverType,
+  pageCount,
+  emptySpreadCount,
+  hasGiftPage = false,
+}: OrderSummaryProps) {
   const quote = quoteBook({ format, coverType, pageCount });
   const issue = describeOrderIssue(quote);
   const flow = useOrderFlow({
@@ -53,6 +61,7 @@ export function OrderSummary({ format, coverType, pageCount, emptySpreadCount }:
         </button>
       </div>
       <p className={styles.meta}>{bookDescription}</p>
+      {hasGiftPage && <p className={styles.meta}>Gift message page: included</p>}
       <div id={priceId} role="group" aria-label="Price details" hidden={!priceVisible}>
         <PriceDetails quote={quote} coverType={coverType} />
       </div>

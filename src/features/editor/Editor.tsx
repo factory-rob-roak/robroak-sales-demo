@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import type { Project } from '../../types';
 import { BookSettings } from './components/BookSettings';
 import { EditorToolbar } from './components/EditorToolbar';
+import { GiftMessagePanel } from './components/GiftMessagePanel';
 import { PageCanvas } from './components/PageCanvas';
 import { PhotoTray } from './components/PhotoTray';
 import { createProjectDraftStorage } from './components/projectDraftStorage';
@@ -11,6 +12,7 @@ import { useTrayUploads } from './components/useTrayUploads';
 import { PAGES_PER_SPREAD } from './constants';
 import styles from './Editor.module.css';
 import { visibleSlots } from './editorReducer';
+import { hasGiftMessage } from './giftMessage';
 import { OrderSummary } from './order/OrderSummary';
 import type { DraftStorage } from './storage';
 import { useEditor } from './useEditor';
@@ -98,8 +100,10 @@ export function Editor({ project, onClose, storage }: EditorProps) {
             coverType={draft.coverType}
             pageCount={draft.spreads.length * PAGES_PER_SPREAD}
             emptySpreadCount={emptySpreadCount}
+            hasGiftPage={hasGiftMessage(draft.giftMessage)}
           />
           <BookSettings draft={draft} dispatch={dispatch} />
+          <GiftMessagePanel draft={draft} dispatch={dispatch} />
         </div>
       </div>
     </div>

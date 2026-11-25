@@ -31,6 +31,15 @@ describe('OrderSummary price', () => {
     expect(details.getByText('Hardcover upgrade').nextSibling).toHaveTextContent('+$15.00');
   });
 
+  it('lists the gift message page without changing the page count or price', () => {
+    const { rerender } = render(<OrderSummary {...book} />);
+    expect(screen.queryByText('Gift message page: included')).not.toBeInTheDocument();
+    rerender(<OrderSummary {...book} hasGiftPage />);
+    expect(screen.getByText('Gift message page: included')).toBeInTheDocument();
+    expect(screen.getByText(/^30 pages/)).toBeInTheDocument();
+    expect(within(priceDetails()).getByText('$74.99')).toBeInTheDocument();
+  });
+
   it('updates as pages are added and leaves out rows that cost nothing', () => {
     const props = { ...book, format: 'square-8', coverType: 'softcover', pageCount: 20 } as const;
     const { rerender } = render(<OrderSummary {...props} />);
