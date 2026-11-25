@@ -34,6 +34,7 @@ function Harness({ draft = makeDraft(), onReAddPhoto = vi.fn() }) {
         selectedPhotoId={selectedPhotoId}
         onSelectPhoto={setSelectedPhotoId}
         onReAddPhoto={onReAddPhoto}
+        uploads={{ onAddFiles: vi.fn(), inProgressCount: 0, errors: [], onDismissError: vi.fn() }}
       />
       <PageCanvas
         draft={state}
