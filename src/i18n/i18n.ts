@@ -1,5 +1,5 @@
 import { formatCents } from '../lib/money';
-import { CATALOGS, type Messages } from './catalogs';
+import type { Messages } from './catalogs';
 import { createFormatters } from './format';
 import { INTL_LOCALE, type Locale } from './locales';
 
@@ -14,13 +14,13 @@ export interface I18n {
   formatCents: (cents: number) => string;
 }
 
-export function createI18n(locale: Locale, setLocale: (locale: Locale) => void): I18n {
+export function createI18n(locale: Locale, messages: Messages, setLocale: (locale: Locale) => void): I18n {
   const tag = INTL_LOCALE[locale];
   const dateFormat = new Intl.DateTimeFormat(tag, { dateStyle: 'medium' });
   return {
     locale,
     setLocale,
-    t: CATALOGS[locale],
+    t: messages,
     formatNumber: createFormatters(locale).number,
     formatDate: (value) => dateFormat.format(typeof value === 'string' ? new Date(value) : value),
     formatCents: (cents) => formatCents(cents, tag),

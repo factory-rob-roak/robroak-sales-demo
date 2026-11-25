@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
-import { CATALOGS, type Messages } from './catalogs';
+import { loadCatalog, type Messages } from './catalogs';
 import { createFormatters } from './format';
 import { createI18n, type I18n } from './i18n';
 import { I18nProvider } from './I18nProvider';
@@ -18,10 +18,10 @@ function shape(catalog: object, prefix = ''): string[] {
 }
 
 describe('catalogs', () => {
-  it('give every locale exactly the keys of the English catalog', () => {
+  it('give every locale exactly the keys of the English catalog', async () => {
     const source = shape(en).sort();
     for (const locale of LOCALES) {
-      expect(shape(CATALOGS[locale]).sort(), locale).toEqual(source);
+      expect(shape(await loadCatalog(locale)).sort(), locale).toEqual(source);
     }
   });
 
@@ -64,7 +64,7 @@ describe('createFormatters', () => {
 
 describe('createI18n', () => {
   it('formats dates from strings and Date objects', () => {
-    const i18n = createI18n(DEFAULT_LOCALE, () => {});
+    const i18n = createI18n(DEFAULT_LOCALE, en, () => {});
     expect(i18n.formatDate('2026-11-01T12:00:00Z')).toBe('Nov 1, 2026');
     expect(i18n.formatDate(new Date(2026, 8, 2))).toBe('Sep 2, 2026');
     expect(i18n.formatNumber(1000)).toBe('1,000');
