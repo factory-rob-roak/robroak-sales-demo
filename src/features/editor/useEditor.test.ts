@@ -11,6 +11,7 @@ const savedDraft: BookDraft = {
   format: 'portrait-8x11',
   coverType: 'layflat',
   theme: 'pastel',
+  giftMessage: '',
   spreads: [createSpread('s1'), createSpread('s2')],
   photos: [],
 };

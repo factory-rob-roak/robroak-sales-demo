@@ -30,6 +30,8 @@ export interface BookDraft {
   format: BookFormat;
   coverType: CoverType;
   theme: ThemeId;
+  /** Printed on a page at the end of the book. Empty means no gift page. */
+  giftMessage: string;
   spreads: Spread[];
   photos: Photo[];
 }
@@ -54,6 +56,8 @@ export type EditorAction =
   | { type: 'setTitle'; title: string }
   | { type: 'setFormat'; format: BookFormat }
   | { type: 'setCoverType'; coverType: CoverType }
+  /** Longer messages are cut to GIFT_MESSAGE_MAX_LENGTH; an empty one removes the gift page. */
+  | { type: 'setGiftMessage'; message: string }
   | { type: 'addPhotos'; photos: Photo[] }
   | { type: 'setPhotoAlt'; photoId: string; alt: string }
   /** Points an existing photo at a new upload, keeping its id and slot references. */

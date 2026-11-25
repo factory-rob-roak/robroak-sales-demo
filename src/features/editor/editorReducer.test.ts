@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { MAX_SPREADS, createSpread } from './constants';
+import { GIFT_MESSAGE_MAX_LENGTH, MAX_SPREADS, createSpread } from './constants';
 import { editorReducer, visibleSlots } from './editorReducer';
 import type { BookDraft, EditorAction, Photo, Spread } from './types';
 
@@ -17,6 +17,7 @@ function draft(spreads: Spread[] = [], photos: Photo[] = []): BookDraft {
     format: 'square-8',
     coverType: 'softcover',
     theme: 'classic',
+    giftMessage: '',
     spreads: spreads.length ? spreads : [createSpread('a'), createSpread('b', 'two-up')],
     photos: photos.length ? photos : [photo('p1'), photo('p2'), photo('p3')],
   };
@@ -164,6 +165,22 @@ describe('book settings', () => {
     const next = run(s, action);
     expect(next).toEqual({ ...s, ...expected });
     expect(run(next, action)).toBe(next);
+  });
+
+  it('sets, replaces, and clears the gift message', () => {
+    const s = draft();
+    const set = run(s, { type: 'setGiftMessage', message: 'Happy birthday, Mum' });
+    expect(set).toEqual({ ...s, giftMessage: 'Happy birthday, Mum' });
+    expect(run(set, { type: 'setGiftMessage', message: 'Happy birthday, Mum' })).toBe(set);
+    expect(run(set, { type: 'setGiftMessage', message: '' })).toEqual(s);
+    expect(run(s, { type: 'setGiftMessage', message: '' })).toBe(s);
+  });
+
+  it('cuts a pasted gift message to the limit', () => {
+    const s = draft();
+    const pasted = run(s, { type: 'setGiftMessage', message: 'x'.repeat(GIFT_MESSAGE_MAX_LENGTH + 20) });
+    expect(pasted.giftMessage).toBe('x'.repeat(GIFT_MESSAGE_MAX_LENGTH));
+    expect(run(pasted, { type: 'setGiftMessage', message: 'x'.repeat(GIFT_MESSAGE_MAX_LENGTH + 1) })).toBe(pasted);
   });
 
   it('sets a caption on one spread', () => {

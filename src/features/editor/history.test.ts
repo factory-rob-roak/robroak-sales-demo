@@ -97,6 +97,7 @@ describe('editor history', () => {
     format: 'square-8',
     coverType: 'softcover',
     theme: 'classic',
+    giftMessage: '',
     spreads: [createSpread('a'), createSpread('b')],
     photos: [],
   };
@@ -114,6 +115,7 @@ describe('editor history', () => {
     expect(editorCoalesceKey({ type: 'setCaption', spreadId: 'a', caption: '' })).toBe('caption:a');
     expect(editorCoalesceKey({ type: 'setCaption', spreadId: 'b', caption: '' })).toBe('caption:b');
     expect(editorCoalesceKey({ type: 'setTitle', title: '' })).toBe('title');
+    expect(editorCoalesceKey({ type: 'setGiftMessage', message: '' })).toBe('giftMessage');
     expect(editorCoalesceKey({ type: 'setPhotoAlt', photoId: 'p', alt: '' })).toBe('alt:p');
     expect(editorCoalesceKey({ type: 'autoFill' })).toBeNull();
   });

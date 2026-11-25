@@ -16,6 +16,7 @@ const emptyDraft: BookDraft = {
   format: 'square-8',
   coverType: 'softcover',
   theme: 'classic',
+  giftMessage: '',
   spreads: [{ id: 's1', layout: 'two-up', slots: [], caption: '' }],
   photos: [],
 };
