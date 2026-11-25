@@ -3,9 +3,11 @@ import type { BookFormat } from '../../../types';
 import { visibleSlots } from '../editorReducer';
 import type { BookDraft, EditorAction, LayoutId, ThemeId } from '../types';
 import { cx } from './classNames';
+import { LayoutPicker } from './LayoutPicker';
 import styles from './PageCanvas.module.css';
 import { PageSlot } from './PageSlot';
 import shared from './shared.module.css';
+import { ZoomControls } from './ZoomControls';
 
 const THEME_CLASS: Record<ThemeId, string | undefined> = {
   classic: styles.themeClassic,
@@ -46,6 +48,7 @@ export function PageCanvas({
   onPhotoPlaced,
   onReAddPhoto,
 }: PageCanvasProps) {
+  const [zoomPercent, setZoomPercent] = useState(100);
   const [announcement, setAnnouncement] = useState('');
   const headingId = useId();
   const hintId = useId();
@@ -67,13 +70,20 @@ export function PageCanvas({
       <h2 id={headingId} className={styles.heading}>
         Spread {spreadIndex + 1} of {draft.spreads.length}
       </h2>
+      <LayoutPicker
+        layout={spread.layout}
+        onChange={(layout) => dispatch({ type: 'setLayout', spreadId: spread.id, layout })}
+      />
       <p id={hintId} className={styles.hint}>
         {selectedPhoto
           ? `Choose a slot for ${selectedPhoto.alt || selectedPhoto.name}.`
           : 'Drag a photo onto a slot, or select a photo in the tray and then choose a slot.'}
       </p>
       <div className={styles.viewport}>
-        <div className={cx(styles.spread, FORMAT_CLASS[draft.format], LAYOUT_CLASS[spread.layout])}>
+        <div
+          className={cx(styles.spread, FORMAT_CLASS[draft.format], LAYOUT_CLASS[spread.layout])}
+          style={{ width: `calc(min(100%, 48rem) * ${zoomPercent / 100})` }}
+        >
           {visibleSlots(spread).map((photoId, slot) => (
             <PageSlot
               key={slot}
@@ -99,6 +109,7 @@ export function PageCanvas({
           }
         />
       </label>
+      <ZoomControls zoomPercent={zoomPercent} onZoomChange={setZoomPercent} />
       <p role="status" className={shared.visuallyHidden}>
         {announcement}
       </p>

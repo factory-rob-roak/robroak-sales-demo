@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useReducer, useState } from 'react';
 import { describe, expect, it, vi } from 'vitest';
@@ -90,5 +90,39 @@ describe('PageCanvas', () => {
     render(<Harness />);
     await userEvent.type(screen.getByRole('textbox', { name: 'Caption' }), 'Day one');
     expect(screen.getByRole('textbox', { name: 'Caption' })).toHaveValue('Day one');
+  });
+
+  it('keeps hidden photos when switching to a bigger layout and back', async () => {
+    render(<Harness />);
+    await userEvent.click(screen.getByRole('radio', { name: 'Collage' }));
+    expect(screen.getByRole('img', { name: 'Sailboat' })).toBeInTheDocument();
+    expect(screen.getAllByRole('button', { name: /^Slot \d/ })).toHaveLength(6);
+    await userEvent.click(screen.getByRole('radio', { name: 'Full page' }));
+    expect(screen.getAllByRole('button', { name: /^Slot \d/ })).toHaveLength(1);
+    await userEvent.click(screen.getByRole('radio', { name: 'Collage' }));
+    expect(screen.getByRole('img', { name: 'Sailboat' })).toBeInTheDocument();
+  });
+
+  it('changes layout from the keyboard with arrow keys', async () => {
+    render(<Harness />);
+    screen.getByRole('radio', { name: 'Two up' }).focus();
+    await userEvent.keyboard('{ArrowRight}');
+    expect(screen.getByRole('radio', { name: 'Three grid' })).toBeChecked();
+    expect(screen.getAllByRole('button', { name: /^Slot \d/ })).toHaveLength(3);
+  });
+
+  it('keeps zoom between 50% and 200%', async () => {
+    render(<Harness />);
+    const zoom = within(screen.getByRole('group', { name: 'Zoom' }));
+    const zoomIn = zoom.getByRole('button', { name: 'Zoom in' });
+    for (let i = 0; i < 6; i += 1) await userEvent.click(zoomIn);
+    expect(zoom.getByText('200%')).toBeInTheDocument();
+    expect(zoomIn).toHaveAttribute('aria-disabled', 'true');
+    await userEvent.click(zoom.getByRole('button', { name: 'Reset zoom' }));
+    expect(zoom.getByText('100%')).toBeInTheDocument();
+    const zoomOut = zoom.getByRole('button', { name: 'Zoom out' });
+    for (let i = 0; i < 4; i += 1) await userEvent.click(zoomOut);
+    expect(zoom.getByText('50%')).toBeInTheDocument();
+    expect(zoomOut).toHaveAttribute('aria-disabled', 'true');
   });
 });
