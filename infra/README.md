@@ -6,7 +6,7 @@ Terraform for static hosting of the Vite build (`dist/`) on AWS, plus the deploy
 
 - **S3 bucket** for the site: private (all public access blocked, ACLs disabled), SSE-S3 encryption, versioning, TLS-only bucket policy, and expiry of old object versions after 30 days.
 - **CloudFront distribution** that reads the bucket through Origin Access Control. It redirects HTTP to HTTPS and sends security headers (CSP, HSTS, `nosniff`, `X-Frame-Options: DENY`, Referrer-Policy, Permissions-Policy). A CloudFront Function serves `index.html` for client-side routes (paths with no file extension). `/assets/*` is cached for a year. Everything else follows the object's `Cache-Control`, and `index.html` is uploaded with `no-cache`.
-- **GitHub OIDC identity provider** (optional, see `create_github_oidc_provider`) and an **IAM deploy role**. Only jobs in this repository's `production` environment can assume the role. It can list the bucket, put and delete objects in it, and create invalidations on the distribution. Nothing else.
+- **GitHub OIDC identity provider** (optional, see `create_github_oidc_provider`) and an **IAM deploy role**. Only the `deploy.yml` workflow running on `main` in this repository's `production` environment can assume the role. The trust policy checks the repository ID and the immutable OIDC subject, so a renamed or recreated repository with the same name cannot use it. It can list the bucket, put and delete objects in it, and create invalidations on the distribution. Nothing else.
 
 No AWS keys are stored anywhere. GitHub Actions gets short-lived credentials through OIDC.
 
@@ -31,11 +31,21 @@ No AWS keys are stored anywhere. GitHub Actions gets short-lived credentials thr
 | `project_name` | `photo-books` | Prefix for resource names. |
 | `bucket_name` | `<project_name>-site-<account id>` | Site bucket name. |
 | `github_repository` | `factory-rob-roak/robroak-sales-demo` | Repository allowed to deploy. |
+| `github_repository_owner_id` | `309863832` | Numeric owner ID, part of the immutable OIDC subject. |
+| `github_repository_id` | `1470847333` | Numeric repository ID, part of the immutable OIDC subject and checked on its own. |
+| `github_deploy_ref` | `refs/heads/main` | Only `deploy.yml` at this ref can assume the deploy role. |
 | `github_environment` | `production` | GitHub environment allowed to assume the deploy role. |
 | `create_github_oidc_provider` | `true` | Set to `false` if the account already has a provider for `token.actions.githubusercontent.com` (an account can only have one). |
 | `price_class` | `PriceClass_100` | CloudFront price class. |
 | `content_security_policy` | strict `'self'` policy | CSP header. Widen it if the app starts loading from other origins (for example a live upload API). |
 | `noncurrent_version_retention_days` | `30` | How long old object versions are kept for rollback. |
+
+This repository uses GitHub's immutable OIDC subject format (`repo:<owner>@<owner id>/<name>@<repo id>:...`). If you point the role at another repository, read its values first:
+
+```bash
+gh api repos/OWNER/REPO --jq '.owner.id, .id'
+gh api repos/OWNER/REPO/actions/oidc/customization/sub --jq '.use_immutable_subject, .sub_claim_prefix'
+```
 
 ## Outputs
 
@@ -82,7 +92,7 @@ A person with admin access to the AWS account runs these steps once. CI never ru
    terraform output
    ```
 
-4. **Create the GitHub environment.** In the repository settings, add an environment named `production`. Under *Deployment branches and tags*, choose *Selected branches and tags* and allow only `main`. This is what limits the role to the main branch. Add required reviewers if you want a manual approval step.
+4. **Create the GitHub environment.** In the repository settings, add an environment named `production`. Under *Deployment branches and tags*, choose *Selected branches and tags* and allow only `main`. Create it before the first deploy: GitHub creates a missing environment with no branch rules the first time a workflow uses it. The role's trust policy also requires `ref` and `job_workflow_ref` to point at `deploy.yml` on `main`, so the role stays limited to main if the environment is misconfigured. Add required reviewers if you want a manual approval step.
 
 5. **Add repository variables** (Settings > Secrets and variables > Actions > Variables, not secrets) from the outputs: `AWS_DEPLOY_ROLE_ARN`, `AWS_S3_BUCKET`, `AWS_CLOUDFRONT_DISTRIBUTION_ID`, and `AWS_REGION` if the bucket is not in `us-east-1`.
 

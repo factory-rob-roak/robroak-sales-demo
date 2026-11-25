@@ -1,5 +1,13 @@
 locals {
   github_oidc_url = "https://token.actions.githubusercontent.com"
+  # Immutable subject format: repo:<owner>@<owner id>/<name>@<repo id>.
+  github_subject_prefix = format(
+    "repo:%s@%s/%s@%s",
+    split("/", var.github_repository)[0],
+    var.github_repository_owner_id,
+    split("/", var.github_repository)[1],
+    var.github_repository_id,
+  )
   github_oidc_provider_arn = (
     var.create_github_oidc_provider
     ? aws_iam_openid_connect_provider.github[0].arn
@@ -20,9 +28,10 @@ data "aws_iam_openid_connect_provider" "github" {
   url = local.github_oidc_url
 }
 
-# A job that declares `environment:` gets a subject claim of
-# repo:<owner>/<repo>:environment:<name>, so this trusts only the deploy
-# environment. Restrict that environment to the main branch in GitHub.
+# The subject only proves the job ran in the deploy environment, and GitHub
+# creates an environment with no branch rules the first time a workflow names
+# it. The ref and job_workflow_ref conditions bind the role to deploy.yml on
+# the deploy branch even if the environment is left unprotected.
 data "aws_iam_policy_document" "deploy_trust" {
   statement {
     actions = ["sts:AssumeRoleWithWebIdentity"]
@@ -41,7 +50,25 @@ data "aws_iam_policy_document" "deploy_trust" {
     condition {
       test     = "StringEquals"
       variable = "token.actions.githubusercontent.com:sub"
-      values   = ["repo:${var.github_repository}:environment:${var.github_environment}"]
+      values   = ["${local.github_subject_prefix}:environment:${var.github_environment}"]
+    }
+
+    condition {
+      test     = "StringEquals"
+      variable = "token.actions.githubusercontent.com:repository_id"
+      values   = [var.github_repository_id]
+    }
+
+    condition {
+      test     = "StringEquals"
+      variable = "token.actions.githubusercontent.com:ref"
+      values   = [var.github_deploy_ref]
+    }
+
+    condition {
+      test     = "StringEquals"
+      variable = "token.actions.githubusercontent.com:job_workflow_ref"
+      values   = ["${var.github_repository}/.github/workflows/deploy.yml@${var.github_deploy_ref}"]
     }
   }
 }
