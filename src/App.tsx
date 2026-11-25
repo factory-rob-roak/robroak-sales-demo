@@ -3,6 +3,7 @@ import styles from './App.module.css';
 import { ProjectCard } from './components/ProjectCard';
 import { sampleProjects } from './data/sampleProjects';
 import { Editor } from './features/editor/Editor';
+import { EditorErrorBoundary } from './features/editor/EditorErrorBoundary';
 
 export function App() {
   const [openProjectId, setOpenProjectId] = useState<string | null>(null);
@@ -15,15 +16,14 @@ export function App() {
   }, [returnedFromEditor, openProject]);
 
   if (openProject) {
+    const closeEditor = () => {
+      setOpenProjectId(null);
+      setReturnedFromEditor(true);
+    };
     return (
-      <Editor
-        key={openProject.id}
-        project={openProject}
-        onClose={() => {
-          setOpenProjectId(null);
-          setReturnedFromEditor(true);
-        }}
-      />
+      <EditorErrorBoundary key={openProject.id} onClose={closeEditor}>
+        <Editor project={openProject} onClose={closeEditor} />
+      </EditorErrorBoundary>
     );
   }
 
