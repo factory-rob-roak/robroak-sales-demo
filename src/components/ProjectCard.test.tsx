@@ -1,8 +1,10 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { expect, it, vi } from 'vitest';
+import { contrastRatio, declarations, outlineColor, parseHex } from '../test/contrast';
 import type { Project } from '../types';
 import { ProjectCard } from './ProjectCard';
+import css from './ProjectCard.module.css?raw';
 
 const project: Project = {
   id: 'p1',
@@ -26,4 +28,9 @@ it('opens the project from the keyboard', async () => {
   await userEvent.tab();
   await userEvent.keyboard('{Enter}');
   expect(onOpen).toHaveBeenCalledWith('p1');
+});
+
+it('draws a focus ring with 3:1 contrast against the card (WCAG 1.4.11)', () => {
+  const cardBg = parseHex(declarations(css, '.card').background ?? '');
+  expect(contrastRatio(outlineColor(css, '.open:focus-visible'), cardBg)).toBeGreaterThanOrEqual(3);
 });
