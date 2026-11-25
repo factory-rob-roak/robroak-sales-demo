@@ -2,7 +2,7 @@ import { render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import { CATALOGS, type Messages } from './catalogs';
 import { createFormatters } from './format';
-import { createI18n } from './i18n';
+import { createI18n, type I18n } from './i18n';
 import { I18nProvider } from './I18nProvider';
 import { DEFAULT_LOCALE, INTL_LOCALE, isLocale, LOCALES } from './locales';
 import { en } from './messages/en';
@@ -86,6 +86,28 @@ describe('I18nProvider', () => {
     );
     expect(screen.getByRole('heading', { name: 'Your photo books' })).toBeInTheDocument();
     expect(document.documentElement).toHaveAttribute('lang', 'en');
+  });
+
+  it('keeps the same context value across renders while the locale is unchanged', () => {
+    const seen: I18n[] = [];
+    function Probe() {
+      seen.push(useI18n());
+      return null;
+    }
+    const { rerender } = render(
+      <I18nProvider>
+        <Probe />
+      </I18nProvider>,
+    );
+    rerender(
+      <I18nProvider>
+        <Probe />
+      </I18nProvider>,
+    );
+    expect(seen).toHaveLength(2);
+    expect(seen[1]).toBe(seen[0]);
+    expect(seen[1]?.t).toBe(seen[0]?.t);
+    expect(seen[1]?.formatCents).toBe(seen[0]?.formatCents);
   });
 
   it('falls back to English without a provider', () => {
