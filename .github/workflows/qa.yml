@@ -10,7 +10,7 @@ name: QA
   workflow_dispatch:
     inputs:
       pr_number:
-        description: PR number to QA (updates its QA comment). Leave empty to QA the selected branch.
+        description: PR number to QA (updates its QA comment, but not the PR's QA check). Leave empty to QA the selected branch.
         required: false
         default: ""
       base_ref:
@@ -22,7 +22,10 @@ permissions:
   contents: read
 
 concurrency:
-  group: qa-${{ github.event.pull_request.number || inputs.pr_number || github.ref }}
+  # Dispatched runs get their own group. A dispatch reports its check on the workflow's
+  # commit, not on the PR head, so letting it cancel the PR's pull_request run would leave
+  # the PR head with a cancelled QA check. To refresh a PR's check, re-run its pull_request run.
+  group: qa-${{ github.event_name }}-${{ github.event.pull_request.number || inputs.pr_number || github.ref }}
   cancel-in-progress: true
 
 jobs:
