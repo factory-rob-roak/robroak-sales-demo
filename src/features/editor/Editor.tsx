@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { useLogger } from '../../api/LoggerProvider';
 import type { Project } from '../../types';
 import { BookSettings } from './components/BookSettings';
 import { EditorToolbar } from './components/EditorToolbar';
@@ -23,7 +24,10 @@ interface EditorProps {
 }
 
 export function Editor({ project, onClose, storage }: EditorProps) {
-  const [draftStorage] = useState(() => storage ?? createProjectDraftStorage(project));
+  const logger = useLogger();
+  const [draftStorage] = useState(
+    () => storage ?? createProjectDraftStorage(project, { logger: logger.child({ projectId: project.id }) }),
+  );
   const editor = useEditor({ storage: draftStorage });
   const { draft, dispatch } = editor;
   const uploads = useTrayUploads(dispatch);

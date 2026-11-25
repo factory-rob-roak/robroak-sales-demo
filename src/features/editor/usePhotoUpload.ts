@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { useLogger } from '../../api/LoggerProvider';
 import { usePhotoUploadClient } from '../../api/PhotoUploadProvider';
 import {
+  PhotoUploadError,
   toPhotoUploadError,
   type PhotoUploadErrorCode,
   type UploadedPhoto,
@@ -27,6 +29,7 @@ export interface PhotoUploadState {
 /** Uploads through the client from `PhotoUploadProvider`; in-flight uploads abort on unmount. */
 export function usePhotoUpload(): PhotoUploadState {
   const client = usePhotoUploadClient();
+  const logger = useLogger();
   const [inProgressCount, setInProgressCount] = useState(0);
   const [errors, setErrors] = useState<readonly PhotoUploadFailure[]>([]);
   const controllers = useRef(new Set<AbortController>());
@@ -52,7 +55,13 @@ export function usePhotoUpload(): PhotoUploadState {
         return await client.upload(file, { signal: controller.signal });
       } catch (error) {
         const failure = toPhotoUploadError(error, file.name);
-        if (failure.code !== 'aborted' && mounted.current) {
+        if (failure.code === 'aborted') return null;
+        // File names are user content, so log only the file's type and size.
+        const context = { code: failure.code, fileType: file.type, fileSizeBytes: file.size };
+        // A PhotoUploadError is an expected outcome; anything else is a client bug worth a stack.
+        if (error instanceof PhotoUploadError) logger.warn('Photo upload failed', context);
+        else logger.error('Photo upload failed unexpectedly', context, error);
+        if (mounted.current) {
           nextErrorId.current += 1;
           const id = `upload-error-${nextErrorId.current}`;
           setErrors((current) => [
@@ -66,7 +75,7 @@ export function usePhotoUpload(): PhotoUploadState {
         if (mounted.current) setInProgressCount((count) => count - 1);
       }
     },
-    [client],
+    [client, logger],
   );
 
   const uploadFiles = useCallback(

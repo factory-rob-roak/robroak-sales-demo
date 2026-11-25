@@ -1,4 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { createStubLogger } from '../../api/createStubLogger';
+import type { LogEntry } from '../../api/logger';
 import { createSpread } from './constants';
 import { STORAGE_KEY, createDraftStorage, getLocalStorage, parseDraft } from './storage';
 import type { BookDraft } from './types';
@@ -102,6 +104,91 @@ describe('createDraftStorage', () => {
     createDraftStorage({ key: 'other' }).save(draft);
     expect(localStorage.getItem('other')).not.toBeNull();
     expect(localStorage.getItem(STORAGE_KEY)).toBeNull();
+  });
+});
+
+describe('createDraftStorage logging', () => {
+  function logged() {
+    const entries: LogEntry[] = [];
+    const logger = createStubLogger({ onEntry: (entry) => entries.push(entry) });
+    return { logger, entries };
+  }
+  const summary = (entries: LogEntry[]) =>
+    entries.map(({ level, message, context, error }) => ({ level, message, context, error: error?.name }));
+
+  it.each([
+    ['bad-json', '{"title":"My secret trip"'],
+    ['bad-envelope', '[]'],
+    ['bad-version', saved(draft, 2)],
+    ['bad-draft', saved({ ...draft, theme: 'neon' })],
+  ])('reports %s as an unreadable draft without its content', (reason, raw) => {
+    localStorage.setItem(STORAGE_KEY, raw);
+    const { logger, entries } = logged();
+    createDraftStorage({ logger }).load();
+    expect(summary(entries)).toEqual([
+      { level: 'error', message: 'Saved draft could not be read', context: { reason }, error: undefined },
+    ]);
+    expect(JSON.stringify(entries)).not.toContain('secret');
+  });
+
+  it('reports a migration that throws with its error', () => {
+    localStorage.setItem(STORAGE_KEY, saved(draft));
+    const { logger, entries } = logged();
+    const migrations = {
+      1: () => {
+        throw new RangeError('bad step');
+      },
+    };
+    createDraftStorage({ logger, version: 2, migrations }).load();
+    expect(summary(entries)).toEqual([
+      {
+        level: 'error',
+        message: 'Saved draft could not be read',
+        context: { reason: 'migration-failed' },
+        error: 'RangeError',
+      },
+    ]);
+  });
+
+  it('warns when storage is missing or cannot be read, and logs nothing for a clean load', () => {
+    const { logger, entries } = logged();
+    createDraftStorage({ logger }).load();
+    createDraftStorage({ logger, storage: null }).load();
+    vi.spyOn(Storage.prototype, 'getItem').mockImplementation(() => {
+      throw new DOMException('denied', 'SecurityError');
+    });
+    createDraftStorage({ logger }).load();
+    expect(summary(entries)).toEqual([
+      { level: 'warn', message: 'Saved draft could not be read', context: { reason: 'no-storage' }, error: undefined },
+      {
+        level: 'warn',
+        message: 'Saved draft could not be read',
+        context: { reason: 'read-failed' },
+        error: 'SecurityError',
+      },
+    ]);
+  });
+
+  it('reports the first failed save in a row, and again after a save succeeds', () => {
+    const { logger, entries } = logged();
+    const storage = createDraftStorage({ logger });
+    const setItem = vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
+      throw new DOMException('full', 'QuotaExceededError');
+    });
+    storage.save(draft);
+    storage.save(draft);
+    expect(summary(entries)).toEqual([
+      { level: 'error', message: 'Draft could not be saved', context: { reason: 'quota' }, error: 'QuotaExceededError' },
+    ]);
+
+    setItem.mockRestore();
+    expect(storage.save(draft)).toEqual({ ok: true });
+    vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
+      throw new DOMException('denied', 'SecurityError');
+    });
+    storage.save(draft);
+    expect(entries).toHaveLength(2);
+    expect(entries[1]?.context).toEqual({ reason: 'unavailable' });
   });
 });
 

@@ -1,6 +1,12 @@
+import type { Logger } from '../../../api/logger';
 import type { Project } from '../../../types';
 import { createDefaultDraft } from '../constants';
 import { createDraftStorage, STORAGE_KEY, type DraftStorage } from '../storage';
+
+export interface ProjectDraftStorageOptions {
+  logger?: Logger;
+  storage?: DraftStorage;
+}
 
 /**
  * Local storage for one project's draft. A project with no usable saved draft
@@ -8,7 +14,7 @@ import { createDraftStorage, STORAGE_KEY, type DraftStorage } from '../storage';
  */
 export function createProjectDraftStorage(
   project: Project,
-  storage: DraftStorage = createDraftStorage({ key: `${STORAGE_KEY}:${project.id}` }),
+  { logger, storage = createDraftStorage({ key: `${STORAGE_KEY}:${project.id}`, logger }) }: ProjectDraftStorageOptions = {},
 ): DraftStorage {
   return {
     load() {
