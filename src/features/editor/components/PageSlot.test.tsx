@@ -32,7 +32,7 @@ describe('PageSlot', () => {
     const { onPlace } = renderSlot({ selectedPhoto: dog });
     screen.getByRole('button', { name: 'Place Dog in the waves in slot 2' }).focus();
     await userEvent.keyboard('{Enter}');
-    expect(onPlace).toHaveBeenCalledWith('p2');
+    expect(onPlace).toHaveBeenCalledWith('p2', 'tray');
   });
 
   it('does nothing when pressed with no photo selected', async () => {
@@ -50,7 +50,7 @@ describe('PageSlot', () => {
     const dragOver = fireEvent.dragOver(slot, { dataTransfer });
     expect(dragOver).toBe(false);
     fireEvent.drop(slot, { dataTransfer });
-    expect(onPlace).toHaveBeenCalledWith('p2');
+    expect(onPlace).toHaveBeenCalledWith('p2', 'drop');
   });
 
   it('ignores drags that are not tray photos', () => {

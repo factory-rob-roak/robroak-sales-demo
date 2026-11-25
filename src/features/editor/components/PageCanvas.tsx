@@ -1,4 +1,6 @@
 import { useId, useState } from 'react';
+import type { PhotoAddedSource } from '../../../api/analytics/analyticsEvents';
+import { useTrackEvent } from '../../../api/analytics/AnalyticsProvider';
 import type { BookFormat } from '../../../types';
 import { visibleSlots } from '../editorReducer';
 import type { BookDraft, EditorAction, LayoutId } from '../types';
@@ -44,6 +46,7 @@ export function PageCanvas({
 }: PageCanvasProps) {
   const [zoomPercent, setZoomPercent] = useState(100);
   const [announcement, setAnnouncement] = useState('');
+  const track = useTrackEvent();
   const headingId = useId();
   const hintId = useId();
   const spread = draft.spreads[spreadIndex];
@@ -52,11 +55,21 @@ export function PageCanvas({
   const photoById = new Map(draft.photos.map((photo) => [photo.id, photo]));
   const selectedPhoto = (selectedPhotoId && photoById.get(selectedPhotoId)) || null;
 
-  const place = (slot: number, photoId: string) => {
+  const place = (slot: number, photoId: string, source: PhotoAddedSource) => {
+    const alreadyThere = visibleSlots(spread)[slot] === photoId;
     dispatch({ type: 'placePhoto', target: { spreadId: spread.id, slot }, photoId });
     onPhotoPlaced();
     const photo = photoById.get(photoId);
-    if (photo) setAnnouncement(`Placed ${photo.alt || photo.name} in slot ${slot + 1}.`);
+    if (!photo) return;
+    setAnnouncement(`Placed ${photo.alt || photo.name} in slot ${slot + 1}.`);
+    if (!alreadyThere) track({ name: 'photo_added', properties: { source, count: 1 } });
+  };
+
+  const changeLayout = (layout: LayoutId) => {
+    dispatch({ type: 'setLayout', spreadId: spread.id, layout });
+    if (layout !== spread.layout) {
+      track({ name: 'layout_changed', properties: { spreadId: spread.id, from: spread.layout, to: layout } });
+    }
   };
 
   return (
@@ -64,10 +77,7 @@ export function PageCanvas({
       <h2 id={headingId} className={styles.heading}>
         Spread {spreadIndex + 1} of {draft.spreads.length}
       </h2>
-      <LayoutPicker
-        layout={spread.layout}
-        onChange={(layout) => dispatch({ type: 'setLayout', spreadId: spread.id, layout })}
-      />
+      <LayoutPicker layout={spread.layout} onChange={changeLayout} />
       <p id={hintId} className={styles.hint}>
         {selectedPhoto
           ? `Choose a slot for ${selectedPhoto.alt || selectedPhoto.name}.`
@@ -85,7 +95,7 @@ export function PageCanvas({
               photo={(photoId && photoById.get(photoId)) || null}
               selectedPhoto={selectedPhoto}
               hintId={hintId}
-              onPlace={(id) => place(slot, id)}
+              onPlace={(id, source) => place(slot, id, source)}
               onRemove={() => dispatch({ type: 'removePhoto', target: { spreadId: spread.id, slot } })}
               onReAdd={onReAddPhoto}
             />

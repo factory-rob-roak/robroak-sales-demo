@@ -1,4 +1,5 @@
 import { useRef, useState, type DragEvent } from 'react';
+import type { PhotoAddedSource } from '../../../api/analytics/analyticsEvents';
 import type { Photo } from '../types';
 import { cx } from './classNames';
 import styles from './PageSlot.module.css';
@@ -10,7 +11,8 @@ interface PageSlotProps {
   /** The photo chosen in the tray for tap or keyboard placement. */
   selectedPhoto: Photo | null;
   hintId: string;
-  onPlace: (photoId: string) => void;
+  /** `drop` for a photo dragged onto the slot, `tray` for a tap or keyboard placement. */
+  onPlace: (photoId: string, source: Extract<PhotoAddedSource, 'drop' | 'tray'>) => void;
   onRemove: () => void;
   onReAdd: (photoId: string) => void;
 }
@@ -47,7 +49,7 @@ export function PageSlot({ index, photo, selectedPhoto, hintId, onPlace, onRemov
     const photoId = readPhotoDragData(event.dataTransfer);
     if (photoId === null) return;
     event.preventDefault();
-    onPlace(photoId);
+    onPlace(photoId, 'drop');
   };
 
   return (
@@ -65,7 +67,7 @@ export function PageSlot({ index, photo, selectedPhoto, hintId, onPlace, onRemov
         aria-describedby={hintId}
         aria-disabled={selectedPhoto === null}
         onClick={() => {
-          if (selectedPhoto) onPlace(selectedPhoto.id);
+          if (selectedPhoto) onPlace(selectedPhoto.id, 'tray');
         }}
       >
         {photo && !photo.missing ? (
