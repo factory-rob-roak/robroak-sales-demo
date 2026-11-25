@@ -7,6 +7,7 @@ import { SpreadListItem } from './SpreadListItem';
 interface DeletedSpread {
   spreadId: string;
   number: number;
+  wasCurrent: boolean;
   spreadsBefore: Spread[];
   spreadsAfter: Spread[] | null;
 }
@@ -56,8 +57,9 @@ export function SpreadList({ draft, dispatch, currentSpreadId, onSelectSpread, o
 
   const remove = (spread: Spread, index: number) => {
     dispatch({ type: 'deleteSpread', spreadId: spread.id });
-    setDeleted({ spreadId: spread.id, number: index + 1, spreadsBefore: spreads, spreadsAfter: null });
-    if (spread.id === currentSpreadId) {
+    const wasCurrent = spread.id === currentSpreadId;
+    setDeleted({ spreadId: spread.id, number: index + 1, wasCurrent, spreadsBefore: spreads, spreadsAfter: null });
+    if (wasCurrent) {
       const remaining = spreads.filter((s) => s.id !== spread.id);
       const next = remaining[Math.min(index, remaining.length - 1)];
       if (next) onSelectSpread(next.id);
@@ -65,8 +67,9 @@ export function SpreadList({ draft, dispatch, currentSpreadId, onSelectSpread, o
     pendingFocus.current = 'undo';
   };
 
-  const undoDelete = (spreadId: string) => {
+  const undoDelete = ({ spreadId, wasCurrent }: DeletedSpread) => {
     onUndo();
+    if (wasCurrent) onSelectSpread(spreadId);
     pendingFocus.current = `${spreadId}-select`;
   };
 
@@ -102,7 +105,7 @@ export function SpreadList({ draft, dispatch, currentSpreadId, onSelectSpread, o
             ref={undoRef}
             type="button"
             className={styles.button}
-            onClick={() => undoDelete(deleted.spreadId)}
+            onClick={() => undoDelete(deleted)}
           >
             Undo
           </button>

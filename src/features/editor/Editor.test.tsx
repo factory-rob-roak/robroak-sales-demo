@@ -92,6 +92,28 @@ describe('Editor', () => {
     expect(screen.getByRole('heading', { name: 'Spread 1 of 2' })).toBeInTheDocument();
   });
 
+  it('shows the restored spread again after undoing the delete of the current spread', async () => {
+    renderEditor();
+    const pages = within(screen.getByRole('region', { name: 'Pages' }));
+    await userEvent.click(pages.getByRole('button', { name: 'Delete spread 1' }));
+    expect(screen.getByRole('heading', { name: 'Spread 1 of 1' })).toBeInTheDocument();
+    await userEvent.click(pages.getByRole('button', { name: 'Undo' }));
+    const restored = pages.getByRole('button', { name: 'Spread 1, pages 1–2' });
+    expect(restored).toHaveFocus();
+    expect(restored).toHaveAttribute('aria-current', 'true');
+    expect(screen.getByRole('heading', { name: 'Spread 1 of 2' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Slot 1: Beach at sunset' })).toBeInTheDocument();
+  });
+
+  it('keeps the current spread when undoing the delete of another spread', async () => {
+    renderEditor();
+    const pages = within(screen.getByRole('region', { name: 'Pages' }));
+    await userEvent.click(pages.getByRole('button', { name: 'Delete spread 2' }));
+    await userEvent.click(pages.getByRole('button', { name: 'Undo' }));
+    expect(pages.getByRole('button', { name: 'Spread 2, pages 3–4' })).toHaveFocus();
+    expect(pages.getByRole('button', { name: 'Spread 1, pages 1–2' })).toHaveAttribute('aria-current', 'true');
+    expect(screen.getByRole('heading', { name: 'Spread 1 of 2' })).toBeInTheDocument();
+  });
   it('starts a project with no saved draft as a new book named after it', () => {
     renderEditor(createProjectDraftStorage(project, memoryStorage({ status: 'empty' })));
     expect(screen.getByRole('heading', { level: 1, name: 'Summer in Maine' })).toBeInTheDocument();
