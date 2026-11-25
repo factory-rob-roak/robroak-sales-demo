@@ -98,6 +98,7 @@ export const fr: Messages = {
   toolbar: {
     back: 'Retour aux projets',
     untitled: 'Livre sans titre',
+    language: 'Langue',
     history: 'Historique',
     save: {
       saved: 'Toutes les modifications sont enregistrées sur cet appareil',

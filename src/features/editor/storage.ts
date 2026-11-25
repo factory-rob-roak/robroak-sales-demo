@@ -114,12 +114,37 @@ function isQuotaError(error: unknown): boolean {
   );
 }
 
-export function createDraftStorage({
+export type StoreLoadResult<T> =
+  | { status: 'loaded'; value: T }
+  | { status: 'empty' }
+  | { status: 'invalid' }
+  | { status: 'unavailable' };
+
+export interface VersionedStore<T> {
+  load(): StoreLoadResult<T>;
+  save(value: T): SaveResult;
+}
+
+export interface VersionedStoreOptions<T> {
+  storage?: Storage | null;
+  key: string;
+  version: number;
+  migrations?: Readonly<Record<number, Migration>>;
+  /** Property of the saved `{ version, [field]: value }` envelope that holds the value. */
+  field: string;
+  /** Validates untrusted data, returning null when it is not a T. */
+  parse: (data: unknown) => T | null;
+}
+
+/** A typed value in Web Storage, saved with a version, migrated on load, and validated before use. */
+export function createVersionedStore<T>({
   storage = getLocalStorage(),
-  key = STORAGE_KEY,
-  version = STORAGE_VERSION,
-  migrations = MIGRATIONS,
-}: DraftStorageOptions = {}): DraftStorage {
+  key,
+  version,
+  migrations = {},
+  field,
+  parse,
+}: VersionedStoreOptions<T>): VersionedStore<T> {
   function migrate(saved: number, data: unknown): unknown {
     let current = data;
     for (let v = saved; v < version; v++) {
@@ -147,22 +172,38 @@ export function createDraftStorage({
         if (typeof saved !== 'number' || !Number.isInteger(saved) || saved < 1 || saved > version) {
           return { status: 'invalid' };
         }
-        const draft = parseDraft(migrate(saved, envelope.draft));
-        return draft === null ? { status: 'invalid' } : { status: 'loaded', draft };
+        const value = parse(migrate(saved, envelope[field]));
+        return value === null ? { status: 'invalid' } : { status: 'loaded', value };
       } catch {
         // Bad JSON, or a migration that threw.
         return { status: 'invalid' };
       }
     },
 
-    save(draft) {
+    save(value) {
       if (storage === null) return { ok: false, reason: 'unavailable' };
       try {
-        storage.setItem(key, JSON.stringify({ version, draft }));
+        storage.setItem(key, JSON.stringify({ version, [field]: value }));
         return { ok: true };
       } catch (error) {
         return { ok: false, reason: isQuotaError(error) ? 'quota' : 'unavailable' };
       }
     },
+  };
+}
+
+export function createDraftStorage({
+  storage,
+  key = STORAGE_KEY,
+  version = STORAGE_VERSION,
+  migrations = MIGRATIONS,
+}: DraftStorageOptions = {}): DraftStorage {
+  const store = createVersionedStore({ storage, key, version, migrations, field: 'draft', parse: parseDraft });
+  return {
+    load() {
+      const result = store.load();
+      return result.status === 'loaded' ? { status: 'loaded', draft: result.value } : result;
+    },
+    save: (draft) => store.save(draft),
   };
 }

@@ -1,6 +1,7 @@
 import { useI18n } from '../../../i18n/useI18n';
 import type { SaveStatus } from '../types';
 import styles from './EditorToolbar.module.css';
+import { LanguagePicker } from './LanguagePicker';
 
 interface EditorToolbarProps {
   title: string;
@@ -40,6 +41,7 @@ export function EditorToolbar({ title, canUndo, canRedo, saveStatus, onUndo, onR
           {t.common.redo}
         </button>
       </div>
+      <LanguagePicker />
       <p role="status" className={styles[saveStatus]}>
         {t.toolbar.save[saveStatus]}
       </p>

@@ -1,7 +1,8 @@
-import { useEffect, useMemo, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { loadCatalog, type Messages } from './catalogs';
 import { createI18n } from './i18n';
-import { DEFAULT_LOCALE, type Locale } from './locales';
+import { createLocaleStore, resolveInitialLocale, type LocaleStore } from './localePreference';
+import type { Locale } from './locales';
 import { en } from './messages/en';
 import { I18nContext } from './useI18n';
 
@@ -13,13 +14,19 @@ interface LoadedCatalog {
 const SOURCE: LoadedCatalog = { locale: 'en', messages: en };
 
 interface I18nProviderProps {
+  /** Skips the saved choice and the browser languages, for tests and previews. */
   initialLocale?: Locale;
+  /** Where the chosen language is kept. Defaults to localStorage. */
+  store?: LocaleStore;
   children: ReactNode;
 }
 
-export function I18nProvider({ initialLocale = DEFAULT_LOCALE, children }: I18nProviderProps) {
-  const [requested, setRequested] = useState<Locale>(initialLocale);
-  const [loaded, setLoaded] = useState<LoadedCatalog | null>(initialLocale === SOURCE.locale ? SOURCE : null);
+export function I18nProvider({ initialLocale, store, children }: I18nProviderProps) {
+  const [localeStore] = useState(() => store ?? createLocaleStore());
+  const [requested, setRequested] = useState<Locale>(
+    () => initialLocale ?? resolveInitialLocale(localeStore, navigator.languages),
+  );
+  const [loaded, setLoaded] = useState<LoadedCatalog | null>(requested === SOURCE.locale ? SOURCE : null);
 
   useEffect(() => {
     if (loaded?.locale === requested) return;
@@ -40,9 +47,17 @@ export function I18nProvider({ initialLocale = DEFAULT_LOCALE, children }: I18nP
     };
   }, [requested, loaded]);
 
+  // Only an explicit choice is saved, so a browser default keeps following the browser.
+  const setLocale = useCallback(
+    (next: Locale) => {
+      setRequested(next);
+      localeStore.save(next);
+    },
+    [localeStore],
+  );
   const value = useMemo(
-    () => (loaded === null ? null : createI18n(loaded.locale, loaded.messages, setRequested)),
-    [loaded],
+    () => (loaded === null ? null : createI18n(loaded.locale, loaded.messages, setLocale)),
+    [loaded, setLocale],
   );
 
   // Screen readers pick their pronunciation from the document language.
