@@ -21,8 +21,10 @@ export function GiftMessagePanel({ draft, dispatch }: GiftMessagePanelProps) {
   const hintId = useId();
   const countId = useId();
   const fieldRef = useRef<HTMLTextAreaElement>(null);
-  const [notice, setNotice] = useState('');
+  // A notice describes one message value; once undo or redo changes the message, it no longer applies.
+  const [notice, setNotice] = useState<{ text: string; message: string } | null>(null);
   const { giftMessage } = draft;
+  const currentNotice = notice?.message === giftMessage ? notice.text : '';
   const remaining = GIFT_MESSAGE_MAX_LENGTH - giftMessageLength(giftMessage);
   const countAnnouncement = useSettledAnnouncement(
     remaining === 1 ? '1 character remaining' : `${remaining} characters remaining`,
@@ -36,13 +38,17 @@ export function GiftMessagePanel({ draft, dispatch }: GiftMessagePanelProps) {
       field.value = fitted.message;
       field.setSelectionRange(fitted.caret, fitted.caret);
     }
-    setNotice(fitted.cut ? `Only ${GIFT_MESSAGE_MAX_LENGTH} characters fit. The rest was left out.` : '');
+    setNotice(
+      fitted.cut
+        ? { text: `Only ${GIFT_MESSAGE_MAX_LENGTH} characters fit. The rest was left out.`, message: fitted.message }
+        : null,
+    );
     dispatch({ type: 'setGiftMessage', message: fitted.message });
   };
 
   const remove = () => {
     dispatch({ type: 'removeGiftMessage' });
-    setNotice('Gift message removed.');
+    setNotice({ text: 'Gift message removed.', message: '' });
     fieldRef.current?.focus();
   };
 
@@ -77,7 +83,7 @@ export function GiftMessagePanel({ draft, dispatch }: GiftMessagePanelProps) {
       </div>
       <GiftMessagePreview message={giftMessage} theme={draft.theme} format={draft.format} />
       <p role="status" className={shared.visuallyHidden}>
-        {notice || countAnnouncement}
+        {currentNotice || countAnnouncement}
       </p>
     </section>
   );

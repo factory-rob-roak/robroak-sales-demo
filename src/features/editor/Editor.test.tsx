@@ -123,6 +123,9 @@ describe('Editor', () => {
     expect(field).toHaveValue('');
     await userEvent.click(screen.getByRole('button', { name: 'Undo' }));
     expect(field).toHaveValue('With love');
+    const giftStatus = within(screen.getByRole('region', { name: 'Gift message' })).getByRole('status');
+    expect(giftStatus).not.toHaveTextContent('Gift message removed.');
+    expect(await within(giftStatus).findByText('291 characters remaining')).toBeInTheDocument();
   });
 
   it('starts a project with no saved draft as a new book named after it', () => {
