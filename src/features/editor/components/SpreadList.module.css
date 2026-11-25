@@ -32,11 +32,19 @@
   list-style: none;
 }
 
+/* When a translated name is too long, the buttons wrap below it as one group. */
 .item {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 0.25rem;
   border-radius: 6px;
+}
+
+.actions {
+  display: flex;
+  gap: 0.25rem;
+  margin-left: auto;
 }
 
 .current {
@@ -57,10 +65,10 @@
 
 .select {
   display: flex;
-  flex: 1;
+  flex: 1 1 auto;
   align-items: center;
   gap: 0.5rem;
-  min-width: 0;
+  max-width: 100%;
   padding: 0.25rem;
   text-align: left;
 }

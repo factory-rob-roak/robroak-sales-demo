@@ -16,6 +16,16 @@
   gap: 0.5rem;
 }
 
+/* The toggle moves below the heading only when a translation can't fit beside it. */
+.header {
+  flex-wrap: wrap;
+}
+
+.header .heading {
+  flex: 1 1 0;
+  min-width: min-content;
+}
+
 .summary p,
 .summary dl,
 .summary dd,

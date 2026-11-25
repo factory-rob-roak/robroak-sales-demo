@@ -48,35 +48,37 @@ export function SpreadListItem({
           <span className={styles.pagesLabel}>{t.spreads.pages(first, first + 1)}</span>
         </span>
       </button>
-      <button
-        data-focus-key={`${spread.id}-up`}
-        type="button"
-        className={styles.icon}
-        aria-label={t.spreads.moveUp(number)}
-        aria-disabled={isFirst}
-        onClick={() => !isFirst && onMove('up')}
-      >
-        <span aria-hidden="true">↑</span>
-      </button>
-      <button
-        data-focus-key={`${spread.id}-down`}
-        type="button"
-        className={styles.icon}
-        aria-label={t.spreads.moveDown(number)}
-        aria-disabled={isLast}
-        onClick={() => !isLast && onMove('down')}
-      >
-        <span aria-hidden="true">↓</span>
-      </button>
-      <button
-        type="button"
-        className={styles.icon}
-        aria-label={t.spreads.delete(number)}
-        aria-disabled={count <= 1}
-        onClick={() => count > 1 && onDelete()}
-      >
-        <span aria-hidden="true">×</span>
-      </button>
+      <div className={styles.actions}>
+        <button
+          data-focus-key={`${spread.id}-up`}
+          type="button"
+          className={styles.icon}
+          aria-label={t.spreads.moveUp(number)}
+          aria-disabled={isFirst}
+          onClick={() => !isFirst && onMove('up')}
+        >
+          <span aria-hidden="true">↑</span>
+        </button>
+        <button
+          data-focus-key={`${spread.id}-down`}
+          type="button"
+          className={styles.icon}
+          aria-label={t.spreads.moveDown(number)}
+          aria-disabled={isLast}
+          onClick={() => !isLast && onMove('down')}
+        >
+          <span aria-hidden="true">↓</span>
+        </button>
+        <button
+          type="button"
+          className={styles.icon}
+          aria-label={t.spreads.delete(number)}
+          aria-disabled={count <= 1}
+          onClick={() => count > 1 && onDelete()}
+        >
+          <span aria-hidden="true">×</span>
+        </button>
+      </div>
     </li>
   );
 }
