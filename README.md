@@ -11,3 +11,11 @@ npm ci
 npm run dev
 npm run check
 ```
+
+End-to-end tests (Playwright) live in `e2e/` and run against the production build in Chromium and WebKit:
+
+```bash
+npx playwright install --with-deps chromium webkit   # once per Playwright version
+npm run test:e2e                                     # builds, serves on port 4180, runs the tests
+npx playwright show-report                           # open the HTML report, with traces for failures
+```

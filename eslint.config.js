@@ -5,7 +5,7 @@ import tseslint from 'typescript-eslint';
 
 export default tseslint.config(
   // prototype/ is a read-only design reference and is never shipped.
-  { ignores: ['dist', 'coverage', 'prototype'] },
+  { ignores: ['dist', 'coverage', 'prototype', 'playwright-report', 'test-results'] },
   {
     files: ['**/*.{ts,tsx}'],
     extends: [js.configs.recommended, ...tseslint.configs.recommended],
