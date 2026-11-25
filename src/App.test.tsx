@@ -11,7 +11,7 @@ it('opens a project in the editor and comes back to the list', async () => {
   const user = userEvent.setup();
   render(<App />);
   await user.click(screen.getByRole('button', { name: 'Open Family Recipes' }));
-  expect(screen.getByRole('heading', { level: 1, name: 'Family Recipes' })).toHaveFocus();
+  expect(await screen.findByRole('heading', { level: 1, name: 'Family Recipes' })).toHaveFocus();
   expect(screen.getByRole('combobox', { name: 'Size' })).toHaveDisplayValue('8.5x11 Portrait');
   expect(screen.queryByRole('region', { name: 'Projects' })).not.toBeInTheDocument();
 
@@ -24,7 +24,7 @@ it('keeps each project draft separately across visits', async () => {
   const user = userEvent.setup();
   render(<App />);
   await user.click(screen.getByRole('button', { name: 'Open Family Recipes' }));
-  const title = screen.getByRole('textbox', { name: 'Title' });
+  const title = await screen.findByRole('textbox', { name: 'Title' });
   await user.clear(title);
   await user.type(title, 'Grandma’s Kitchen');
   await user.click(screen.getByRole('button', { name: /Back to projects/ }));
