@@ -1,4 +1,5 @@
 import { useId, useRef, useState } from 'react';
+import { useTrackEvent } from '../../../api/analytics/AnalyticsProvider';
 import { formatCents } from '../../../lib/money';
 import { COVER_LABELS, FORMAT_LABELS, type BookFormat, type CoverType } from '../../../types';
 import styles from './OrderSummary.module.css';
@@ -17,12 +18,20 @@ export interface OrderSummaryProps {
 export function OrderSummary({ format, coverType, pageCount, emptySpreadCount }: OrderSummaryProps) {
   const quote = quoteBook({ format, coverType, pageCount });
   const issue = describeOrderIssue(quote);
+  const track = useTrackEvent();
   const flow = useOrderFlow({
     format,
     coverType,
     pageCount,
     emptySpreadCount,
     canOrder: quote.status === 'priced',
+    onReady: () => {
+      if (quote.status !== 'priced') return;
+      track({
+        name: 'order_started',
+        properties: { pageCount, format, cover: coverType, totalCents: quote.totalCents },
+      });
+    },
   });
   const [priceVisible, setPriceVisible] = useState(true);
   const headingId = useId();
