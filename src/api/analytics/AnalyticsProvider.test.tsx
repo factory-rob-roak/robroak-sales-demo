@@ -1,4 +1,5 @@
-import { render, screen } from '@testing-library/react';
+import { render, renderHook, screen } from '@testing-library/react';
+import type { ReactNode } from 'react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
 import type { AnalyticsClient } from './analyticsEvents';
@@ -24,6 +25,20 @@ describe('useTrackEvent', () => {
     );
     await userEvent.click(screen.getByRole('button', { name: 'Add' }));
     expect(client.events).toEqual([{ name: 'photo_added', properties: { source: 'tray', count: 1 } }]);
+  });
+
+  it('returns the same function across renders until the client changes', () => {
+    let client: AnalyticsClient = createMemoryAnalyticsClient();
+    const wrapper = ({ children }: { children: ReactNode }) => (
+      <AnalyticsProvider client={client}>{children}</AnalyticsProvider>
+    );
+    const { result, rerender } = renderHook(() => useTrackEvent(), { wrapper });
+    const first = result.current;
+    rerender();
+    expect(result.current).toBe(first);
+    client = createMemoryAnalyticsClient();
+    rerender();
+    expect(result.current).not.toBe(first);
   });
 
   it('works without a provider', async () => {
