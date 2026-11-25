@@ -70,9 +70,10 @@
   font-weight: 600;
 }
 
+/* 36 px wide (44 px tall) leaves the label room for "Spread 10" in the side column. */
 .icon {
   flex: none;
-  width: 44px;
+  width: 36px;
   font-size: 1.125rem;
 }
 
@@ -108,6 +109,13 @@
 @container (width < 18rem) {
   .thumb {
     width: 2rem;
+  }
+}
+
+/* Phones get a slightly narrower list than the desktop side column. */
+@container (width < 17rem) {
+  .icon {
+    width: 32px;
   }
 }
 

@@ -114,4 +114,12 @@ describe('SpreadList', () => {
     expect(label['white-space']).not.toBe('nowrap');
     expect(label['min-width']).toBe('0');
   });
+  it('keeps move and delete buttons tall enough to tap but narrow enough to leave the label room', () => {
+    const icon = declarations(css, '.icon');
+    const width = Number.parseFloat(icon.width ?? '');
+    // 24 px is the WCAG 2.5.8 minimum; 44 px tall rows keep a comfortable touch height.
+    expect(width).toBeGreaterThanOrEqual(24);
+    expect(width).toBeLessThanOrEqual(36);
+    expect(icon['min-height']).toBe('44px');
+  });
 });
