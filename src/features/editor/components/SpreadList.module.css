@@ -32,7 +32,11 @@
   list-style: none;
 }
 
-/* When a translated name is too long, the buttons wrap below it as one group. */
+/*
+ * When the name and the buttons don't fit on one row, the buttons wrap below the name as one group.
+ * The 19rem side column is too narrow even for "Spread 1", so every language wraps there;
+ * wider single-column layouts keep one row.
+ */
 .item {
   display: flex;
   flex-wrap: wrap;
