@@ -10,6 +10,7 @@ export type { Messages };
 const LOADERS: Record<Locale, () => Promise<Messages>> = {
   en: () => Promise.resolve(en),
   de: () => import('./messages/de').then((module) => module.de),
+  fr: () => import('./messages/fr').then((module) => module.fr),
 };
 
 export function loadCatalog(locale: Locale): Promise<Messages> {

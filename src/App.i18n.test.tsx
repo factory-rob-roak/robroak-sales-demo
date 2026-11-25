@@ -80,3 +80,32 @@ describe('App in German', () => {
     await expectNoEnglish('de');
   });
 });
+
+describe('App in French', () => {
+  it('shows the project list with French copy, dates, and prices', async () => {
+    renderApp('fr');
+    expect(await screen.findByRole('heading', { level: 1, name: 'Vos livres photo' })).toBeInTheDocument();
+    const card = within(screen.getByRole('article', { name: 'Family Recipes' }));
+    expect(card.getByText('Portrait 8,5 × 11 po · Couverture souple · 20 pages')).toBeInTheDocument();
+    expect(card.getByText('Modifié le 2 sept. 2026')).toBeInTheDocument();
+    expect(card.getByText('39,99 $US')).toBeInTheDocument();
+    expect(document.documentElement).toHaveAttribute('lang', 'fr');
+    await expectNoEnglish('fr');
+  });
+
+  it('shows the editor in French', async () => {
+    const user = userEvent.setup();
+    renderApp('fr');
+    await user.click(await screen.findByRole('button', { name: 'Ouvrir Summer in Maine' }));
+    expect(screen.getByRole('combobox', { name: 'Couverture' })).toHaveDisplayValue('Couverture rigide');
+    expect(screen.getByRole('heading', { name: 'Double page 1 sur 2' })).toBeInTheDocument();
+    expect(screen.getByText('2 doubles pages · 4 pages imprimées')).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Commander le livre' }));
+    expect(
+      screen.getByText(
+        'Vous ne pouvez pas encore commander. Ajoutez 16 pages pour atteindre le minimum de 20 pages.',
+      ),
+    ).toHaveAttribute('role', 'alert');
+    await expectNoEnglish('fr');
+  });
+});
