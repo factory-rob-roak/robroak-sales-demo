@@ -25,6 +25,39 @@ variable "github_repository" {
   description = "GitHub repository allowed to deploy, as owner/name."
   type        = string
   default     = "factory-rob-roak/robroak-sales-demo"
+
+  validation {
+    condition     = can(regex("^[A-Za-z0-9-]+/[A-Za-z0-9._-]+$", var.github_repository))
+    error_message = "github_repository must be owner/name."
+  }
+}
+
+variable "github_repository_owner_id" {
+  description = "Numeric ID of the repository owner. Part of the immutable OIDC subject claim."
+  type        = string
+  default     = "309863832"
+
+  validation {
+    condition     = can(regex("^[0-9]+$", var.github_repository_owner_id))
+    error_message = "github_repository_owner_id must be a numeric ID."
+  }
+}
+
+variable "github_repository_id" {
+  description = "Numeric ID of the repository. Unlike the name, it never changes or gets reused."
+  type        = string
+  default     = "1470847333"
+
+  validation {
+    condition     = can(regex("^[0-9]+$", var.github_repository_id))
+    error_message = "github_repository_id must be a numeric ID."
+  }
+}
+
+variable "github_deploy_ref" {
+  description = "Git ref that deploys run from. Only deploy.yml at this ref can assume the deploy role."
+  type        = string
+  default     = "refs/heads/main"
 }
 
 variable "github_environment" {
