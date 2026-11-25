@@ -1,7 +1,7 @@
 import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useReducer } from 'react';
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { createStubPhotoUploadClient } from '../../../api/createStubPhotoUploadClient';
 import type { PhotoUploadClient, UploadedPhoto } from '../../../api/photoUpload';
 import { PhotoUploadProvider } from '../../../api/PhotoUploadProvider';
@@ -20,8 +20,8 @@ const emptyDraft: BookDraft = {
   photos: [],
 };
 
-function Tray() {
-  const [draft, dispatch] = useReducer(editorReducer, emptyDraft);
+function Tray({ initial = emptyDraft }: { initial?: BookDraft }) {
+  const [draft, dispatch] = useReducer(editorReducer, initial);
   const uploads = useTrayUploads(dispatch);
   return (
     <PhotoTray
@@ -29,7 +29,6 @@ function Tray() {
       dispatch={dispatch}
       selectedPhotoId={null}
       onSelectPhoto={() => {}}
-      onReAddPhoto={() => {}}
       uploads={uploads}
     />
   );
@@ -42,13 +41,17 @@ const stub = createStubPhotoUploadClient({
   createObjectUrl: (file) => `blob:${file.name}`,
 });
 
-function renderTray(client: PhotoUploadClient = stub) {
-  render(
+function renderTray(client: PhotoUploadClient = stub, initial?: BookDraft) {
+  return render(
     <PhotoUploadProvider client={client}>
-      <Tray />
+      <Tray initial={initial} />
     </PhotoUploadProvider>,
   );
 }
+
+afterEach(() => {
+  vi.unstubAllGlobals();
+});
 
 const jpeg = (name: string) => new File(['x'], name, { type: 'image/jpeg' });
 
@@ -104,6 +107,32 @@ describe('PhotoTray uploads', () => {
     await userEvent.keyboard('{Enter}');
     expect(screen.queryByRole('list', { name: 'Upload problems' })).not.toBeInTheDocument();
     expect(screen.getByLabelText('Add photos')).toHaveFocus();
+  });
+});
+
+describe('PhotoTray re-add and cleanup', () => {
+  it('re-adds a missing photo in place, keeping its id and alt text', async () => {
+    const missing: BookDraft = {
+      ...emptyDraft,
+      photos: [{ id: 'old', url: 'blob:dead', name: 'dog.jpg', alt: 'Max', missing: true }],
+    };
+    renderTray(stub, missing);
+    await userEvent.click(screen.getByRole('button', { name: 'Re-add photo dog.jpg' }));
+    await userEvent.upload(screen.getByLabelText('Replacement photo'), jpeg('dog-again.jpg'));
+    const photo = await screen.findByRole('img', { name: 'Max' });
+    expect(photo).toHaveAttribute('src', 'blob:dog-again.jpg');
+    expect(screen.queryByRole('button', { name: /Re-add photo/ })).not.toBeInTheDocument();
+  });
+
+  it('revokes the object URLs it created when the editor closes', async () => {
+    const revokeObjectURL = vi.fn();
+    vi.stubGlobal('URL', Object.assign(class extends URL {}, { revokeObjectURL }));
+    const { unmount } = renderTray();
+    await userEvent.upload(screen.getByLabelText('Add photos'), [jpeg('a.jpg'), jpeg('b.jpg')]);
+    await screen.findByRole('heading', { name: 'Photos (2)' });
+    expect(revokeObjectURL).not.toHaveBeenCalled();
+    unmount();
+    expect(revokeObjectURL.mock.calls).toEqual([['blob:a.jpg'], ['blob:b.jpg']]);
   });
 });
 
