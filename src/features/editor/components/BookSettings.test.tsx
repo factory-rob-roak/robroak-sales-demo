@@ -2,9 +2,11 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useReducer } from 'react';
 import { describe, expect, it } from 'vitest';
+import { declarations } from '../../../test/contrast';
 import { createDefaultDraft } from '../constants';
 import { editorReducer } from '../editorReducer';
 import { BookSettings } from './BookSettings';
+import css from './BookSettings.module.css?raw';
 
 function Harness() {
   const [draft, dispatch] = useReducer(editorReducer, undefined, () => createDefaultDraft());
@@ -48,5 +50,17 @@ describe('BookSettings', () => {
     await userEvent.selectOptions(screen.getByRole('combobox', { name: 'Size' }), '11x8.5 Landscape');
     await userEvent.selectOptions(screen.getByRole('combobox', { name: 'Cover' }), 'Lay-flat');
     expect(draftSummary()).toHaveTextContent('|landscape-11|layflat');
+  });
+
+  it('lets theme options wrap onto their own rows instead of overflowing the panel (WCAG 1.4.10, 1.4.12)', () => {
+    // Two fixed columns overflowed at 320 px and with larger text spacing; wrapping only when needed avoids it.
+    const columns = declarations(css, '.themes')['grid-template-columns'] ?? '';
+    // Never wider than the panel, never narrower than an option, and never more than two per row.
+    expect(columns).toMatch(
+      /^repeat\(auto-fit, minmax\(min\(100%, max\([\d.]+rem, calc\(50% - 0\.25rem\)\)\), 1fr\)\)$/,
+    );
+    // An option is about 131 px wide, or 143 px with WCAG text spacing.
+    const minRem = Number(/max\(([\d.]+)rem/.exec(columns)?.[1]);
+    expect(minRem * 16).toBeGreaterThanOrEqual(140);
   });
 });
