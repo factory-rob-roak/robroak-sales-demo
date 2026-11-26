@@ -59,8 +59,8 @@ describe('BookSettings', () => {
     expect(columns).toMatch(
       /^repeat\(auto-fit, minmax\(min\(100%, max\([\d.]+rem, calc\(50% - 0\.25rem\)\)\), 1fr\)\)$/,
     );
-    // An option is about 131 px wide, or 143 px with WCAG text spacing.
+    // An option is about 131 px wide, or 145 px with WCAG text spacing.
     const minRem = Number(/max\(([\d.]+)rem/.exec(columns)?.[1]);
-    expect(minRem * 16).toBeGreaterThanOrEqual(140);
+    expect(minRem * 16).toBeGreaterThanOrEqual(145);
   });
 });
