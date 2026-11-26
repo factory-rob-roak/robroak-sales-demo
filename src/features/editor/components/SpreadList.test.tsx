@@ -2,11 +2,13 @@ import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useState } from 'react';
 import { describe, expect, it } from 'vitest';
+import { declarations } from '../../../test/contrast';
 import { createSpread } from '../constants';
 import type { DraftStorage } from '../storage';
 import type { BookDraft } from '../types';
 import { useEditor } from '../useEditor';
 import { SpreadList } from './SpreadList';
+import css from './SpreadList.module.css?raw';
 
 const start: BookDraft = {
   title: 'Trip',
@@ -74,7 +76,7 @@ describe('SpreadList', () => {
     expect(undo).toHaveFocus();
     await userEvent.keyboard('{Enter}');
     expect(items()).toHaveLength(3);
-    expect(screen.queryByRole('status')).not.toBeInTheDocument();
+    expect(screen.getByRole('status')).toBeEmptyDOMElement();
     expect(screen.getByRole('button', { name: 'Spread 1, pages 1–2' })).toHaveFocus();
   });
 
@@ -97,5 +99,27 @@ describe('SpreadList', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Add spread' }));
     expect(items()).toHaveLength(4);
     expect(screen.getByText('4 spreads · 8 printed pages')).toBeInTheDocument();
+  });
+  it('announces a deletion through a live region that is already on the page (WCAG 4.1.3)', async () => {
+    render(<Harness />);
+    const status = screen.getByRole('status');
+    expect(status).toBeEmptyDOMElement();
+    await userEvent.click(screen.getByRole('button', { name: 'Delete spread 2' }));
+    expect(status).toHaveTextContent('Spread 2 deleted.');
+    expect(screen.getByRole('button', { name: 'Undo' })).toHaveAccessibleDescription('Spread 2 deleted.');
+  });
+
+  it('lets the spread label wrap instead of overflowing into the move buttons (WCAG 1.4.10)', () => {
+    const label = declarations(css, '.label');
+    expect(label['white-space']).not.toBe('nowrap');
+    expect(label['min-width']).toBe('0');
+  });
+  it('keeps move and delete buttons tall enough to tap but narrow enough to leave the label room', () => {
+    const icon = declarations(css, '.icon');
+    const width = Number.parseFloat(icon.width ?? '');
+    // 24 px is the WCAG 2.5.8 minimum; 44 px tall rows keep a comfortable touch height.
+    expect(width).toBeGreaterThanOrEqual(24);
+    expect(width).toBeLessThanOrEqual(36);
+    expect(icon['min-height']).toBe('44px');
   });
 });
